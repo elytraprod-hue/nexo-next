@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #080808;
+  --foreground: #f4f4f5;
+  --muted: #a1a1aa;
+  --panel: rgba(255, 255, 255, 0.055);
+  --panel-strong: rgba(255, 255, 255, 0.09);
+  --border: rgba(255, 255, 255, 0.12);
+  --orange: #ff6a00;
+  --green: #17d18b;
+  --blue: #3b82f6;
+  --violet: #8b5cf6;
+  --cyan: #22d3ee;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: rgba(255, 106, 0, 0.35);
+}
+
+.app-bg {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255, 106, 0, 0.16), transparent 28rem),
+    radial-gradient(circle at 82% 16%, rgba(34, 211, 238, 0.11), transparent 28rem),
+    linear-gradient(135deg, #080808 0%, #101112 48%, #060606 100%);
+}
+
+.glass-panel {
+  border: 1px solid var(--border);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.035));
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(22px) saturate(130%);
+  -webkit-backdrop-filter: blur(22px) saturate(130%);
+}
+
+.soft-panel {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.36);
+}
+
+.timeline-range {
+  appearance: none;
+  background: transparent;
+}
+
+.timeline-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid #111;
+  background: var(--orange);
+  box-shadow: 0 0 0 6px rgba(255, 106, 0, 0.18);
+}
+
+.timeline-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid #111;
+  background: var(--orange);
+  box-shadow: 0 0 0 6px rgba(255, 106, 0, 0.18);
+}
+
+@media (max-width: 920px) {
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+}
