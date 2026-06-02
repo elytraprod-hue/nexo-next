@@ -15,6 +15,8 @@ import {
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Surface } from "@/components/ui/surface";
+import { OperationsTimeline } from "@/features/dashboard/operations-timeline";
+import { SmartAlerts } from "@/features/dashboard/smart-alerts";
 import { AUDIOVISUAL_PRESETS, PRODUCTION_PIPELINE } from "@/lib/constants";
 import { calculateMaturity, getClientName } from "@/lib/workspace-state";
 import { useWorkspaceState } from "@/hooks/use-workspace-state";
@@ -215,6 +217,11 @@ export function Dashboard() {
             })}
           </div>
         </Surface>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <OperationsTimeline state={state} />
+        <SmartAlerts state={state} />
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

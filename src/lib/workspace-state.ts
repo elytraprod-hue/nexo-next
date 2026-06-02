@@ -272,3 +272,78 @@ export function calculateMaturity(state: WorkspaceState) {
 export function getClientName(state: WorkspaceState, clientId?: string) {
   return state.clients.find((client) => client.id === clientId)?.name ?? "Cliente sem nome";
 }
+
+export function getOperationalTimeline(state: WorkspaceState) {
+  const projectEvents = state.projects.flatMap((project) => [
+    {
+      id: `${project.id}-deadline`,
+      date: project.deadline,
+      title: `Entrega: ${project.title}`,
+      description: getClientName(state, project.clientId),
+      type: "delivery" as const,
+    },
+    ...PRODUCTION_PIPELINE.filter((step) => project.pipeline[step.key]).map((step) => ({
+      id: `${project.id}-${step.key}`,
+      date: project.createdAt.slice(0, 10),
+      title: `${step.label} concluído`,
+      description: project.title,
+      type: "production" as const,
+    })),
+  ]);
+
+  const financeEvents = state.financeEntries.map((entry) => ({
+    id: `${entry.id}-finance`,
+    date: entry.dueAt,
+    title: entry.type === "payable" ? `Pagar: ${entry.label}` : `Receber: ${entry.label}`,
+    description: entry.type === "payable" ? "Saída prevista" : "Entrada prevista",
+    type: entry.type === "payable" ? ("payable" as const) : ("receivable" as const),
+  }));
+
+  const documentEvents = state.documents.map((doc) => ({
+    id: `${doc.id}-doc`,
+    date: doc.createdAt.slice(0, 10),
+    title: `Documento: ${doc.title}`,
+    description: "Histórico salvo",
+    type: "document" as const,
+  }));
+
+  return [...projectEvents, ...financeEvents, ...documentEvents]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 8);
+}
+
+export function getWorkspaceAlerts(state: WorkspaceState) {
+  const now = new Date("2026-06-02T00:00:00.000Z");
+  const sevenDays = 1000 * 60 * 60 * 24 * 7;
+
+  const receivables = state.financeEntries.filter((entry) => entry.type === "receivable" && entry.status !== "paid");
+  const urgentProjects = state.projects.filter((project) => {
+    const due = new Date(`${project.deadline}T00:00:00.000Z`);
+    return due.getTime() - now.getTime() <= sevenDays && project.status !== "entregue";
+  });
+
+  return [
+    ...receivables.map((entry) => ({
+      id: `receivable-${entry.id}`,
+      label: "Recebimento aberto",
+      text: entry.label,
+      tone: "money" as const,
+    })),
+    ...urgentProjects.map((project) => ({
+      id: `project-${project.id}`,
+      label: "Entrega próxima",
+      text: project.title,
+      tone: "deadline" as const,
+    })),
+    ...(state.documents.length === 0
+      ? [
+          {
+            id: "missing-docs",
+            label: "Documentação",
+            text: "Gere o primeiro briefing ou proposta para criar histórico.",
+            tone: "doc" as const,
+          },
+        ]
+      : []),
+  ].slice(0, 5);
+}

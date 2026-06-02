@@ -20,6 +20,7 @@ Nova base do NEXO Central em Next.js + TypeScript, criada em repositório separa
 - `src/services`: acesso a dados
 - `src/types`: tipos de domínio
 - `supabase/migrations`: migrations do banco
+- `docs/product-principles.md`: princípios de decisão do produto
 
 ## Rodar localmente
 

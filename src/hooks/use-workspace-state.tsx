@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { studioDocById, type PipelineKey, type RelationshipType, type StudioDocId, presetById } from "@/lib/constants";
 import {
   INITIAL_WORKSPACE_STATE,
@@ -15,19 +15,28 @@ import {
 
 const STORAGE_KEY = "nexo-next-workspace-state";
 
-export function useWorkspaceState() {
+type WorkspaceContextValue = ReturnType<typeof useWorkspaceStateModel>;
+
+const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+
+function readStoredState() {
+  if (typeof window === "undefined") return INITIAL_WORKSPACE_STATE;
+
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? (JSON.parse(saved) as WorkspaceState) : INITIAL_WORKSPACE_STATE;
+  } catch {
+    return INITIAL_WORKSPACE_STATE;
+  }
+}
+
+function useWorkspaceStateModel() {
   const [state, setState] = useState<WorkspaceState>(INITIAL_WORKSPACE_STATE);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setState(JSON.parse(saved) as WorkspaceState);
-    } catch {
-      setState(INITIAL_WORKSPACE_STATE);
-    } finally {
-      setReady(true);
-    }
+    setState(readStoredState());
+    setReady(true);
   }, []);
 
   useEffect(() => {
@@ -59,12 +68,8 @@ export function useWorkspaceState() {
     };
   }, [state]);
 
-  return {
-    state,
-    ready,
-    metrics,
-    setState,
-    actions: {
+  const actions = useMemo(
+    () => ({
       addClient(input: { name: string; relationshipType: RelationshipType; presetId: string; playbookId?: string }) {
         const client = buildClient(input);
         setState((current) => ({ ...current, clients: [client, ...current.clients] }));
@@ -121,30 +126,36 @@ export function useWorkspaceState() {
       }) {
         const doc = studioDocById(input.docType);
         const preset = presetById(input.presetId);
-        const project = state.projects.find((item) => item.id === input.projectId);
-        const clientName = getClientName(state, input.clientId || project?.clientId);
-        const title = `${doc.label} - ${project?.title || preset.title}`;
-        const record: StudioDocumentRecord = {
-          id: createId("doc"),
-          docType: input.docType,
-          title,
-          clientId: input.clientId || project?.clientId,
-          projectId: input.projectId,
-          presetId: input.presetId,
-          payload: input.payload,
-          summary: buildDocumentSummary({
-            docLabel: doc.label,
-            tone: `${doc.description}`,
-            clientName,
-            projectTitle: project?.title || preset.title,
-            presetTitle: preset.title,
-            payload: input.payload,
-          }),
-          createdAt: new Date().toISOString(),
-        };
+        let record: StudioDocumentRecord | undefined;
 
-        setState((current) => ({ ...current, documents: [record, ...current.documents] }));
-        return record;
+        setState((current) => {
+          const project = current.projects.find((item) => item.id === input.projectId);
+          const clientName = getClientName(current, input.clientId || project?.clientId);
+          const title = `${doc.label} - ${project?.title || preset.title}`;
+          record = {
+            id: createId("doc"),
+            docType: input.docType,
+            title,
+            clientId: input.clientId || project?.clientId,
+            projectId: input.projectId,
+            presetId: input.presetId,
+            payload: input.payload,
+            summary: buildDocumentSummary({
+              docLabel: doc.label,
+              tone: `${doc.description}`,
+              clientName,
+              projectTitle: project?.title || preset.title,
+              presetTitle: preset.title,
+              payload: input.payload,
+            }),
+            createdAt: new Date().toISOString(),
+          };
+
+          return { ...current, documents: [record, ...current.documents] };
+        });
+
+        if (!record) throw new Error("Não foi possível gerar o documento.");
+        return record as StudioDocumentRecord;
       },
       togglePrivacy() {
         setState((current) => ({ ...current, privacyMode: !current.privacyMode }));
@@ -152,6 +163,28 @@ export function useWorkspaceState() {
       resetDemo() {
         setState(INITIAL_WORKSPACE_STATE);
       },
-    },
+    }),
+    [],
+  );
+
+  return {
+    state,
+    ready,
+    metrics,
+    setState,
+    actions,
   };
+}
+
+export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
+  const value = useWorkspaceStateModel();
+
+  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
+}
+
+export function useWorkspaceState() {
+  const context = useContext(WorkspaceContext);
+  if (!context) throw new Error("useWorkspaceState deve ser usado dentro de WorkspaceProvider.");
+
+  return context;
 }

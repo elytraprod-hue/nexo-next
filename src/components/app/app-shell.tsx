@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   BriefcaseBusiness,
@@ -15,6 +16,7 @@ import {
   Sparkles,
   WalletCards,
 } from "lucide-react";
+import { CommandPalette } from "@/components/app/command-palette";
 import { cn } from "@/lib/utils/cn";
 
 const navigation = [
@@ -39,6 +41,18 @@ type AppShellProps = {
 
 export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Central", subtitle, primaryAction }: AppShellProps) {
   const pathname = usePathname();
+  const [commandOpen, setCommandOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <main className="app-bg min-h-screen text-zinc-100">
@@ -95,10 +109,15 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="hidden min-h-11 min-w-[260px] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 text-sm font-bold text-zinc-500 md:flex">
+                <button
+                  className="hidden min-h-11 min-w-[260px] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 text-left text-sm font-bold text-zinc-500 transition hover:text-zinc-300 md:flex"
+                  type="button"
+                  onClick={() => setCommandOpen(true)}
+                >
                   <Search size={17} />
-                  Buscar cliente, projeto ou documento
-                </div>
+                  Comando rápido
+                  <span className="ml-auto rounded-lg bg-white/10 px-2 py-1 text-[10px] text-zinc-400">⌘K</span>
+                </button>
                 {primaryAction ? (
                   <Link
                     href={primaryAction.href}
@@ -145,8 +164,12 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
           <div className="fixed bottom-4 right-4 z-40 flex flex-col gap-2">
             <Link
               href="/clientes"
+              onClick={(event) => {
+                event.preventDefault();
+                setCommandOpen(true);
+              }}
               className="grid size-14 place-items-center rounded-2xl border border-orange-400/30 bg-orange-500 text-black shadow-[0_18px_50px_rgba(255,106,0,0.35)] transition hover:scale-105"
-              title="Novo cliente guiado"
+              title="Comando rápido"
             >
               <Plus size={24} />
             </Link>
@@ -158,6 +181,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
               <BarChart3 size={20} />
             </Link>
           </div>
+          <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
         </section>
       </div>
     </main>
