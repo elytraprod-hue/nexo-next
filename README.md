@@ -39,6 +39,8 @@ Configure as variáveis abaixo na Vercel e no `.env.local`:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+# ou, nos projetos novos do Supabase:
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
 Depois aplique a migration:
@@ -48,6 +50,14 @@ supabase db push
 ```
 
 ## Review de vídeo
+
+A área interna fica em:
+
+```bash
+/review
+```
+
+Ela permite criar review por URL/CDN, Google Drive ou upload real para Supabase Storage no bucket `review-videos`.
 
 A rota pública fica em:
 
@@ -63,6 +73,8 @@ Também há compatibilidade inicial com links antigos do tipo:
 
 Esse link redireciona para `/review/TOKEN`.
 
+Para upload real, aplique também a migration `20260602_review_storage_upload.sql`, que cria o bucket `review-videos` e limita upload/edição aos membros do workspace.
+
 ## Deploy
 
 ```bash
@@ -77,4 +89,5 @@ Antes de produção real, valide:
 - variáveis de ambiente do Supabase
 - policies de RLS
 - criação do primeiro workspace
-- upload/transcodificação HLS via Mux, Bunny Stream, Cloudflare Stream ou outro CDN
+- upload no Supabase Storage
+- transcodificação HLS via Mux, Bunny Stream, Cloudflare Stream ou outro CDN para vídeos pesados

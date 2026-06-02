@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Dashboard } from "@/features/dashboard/dashboard";
+import { LandingPage } from "@/features/marketing/landing-page";
 
 type HomeProps = {
   searchParams?: Promise<{ review?: string }>;
@@ -12,5 +12,5 @@ export default async function Home({ searchParams }: HomeProps) {
     redirect(`/review/${encodeURIComponent(params.review)}`);
   }
 
-  return <Dashboard />;
+  return <LandingPage />;
 }

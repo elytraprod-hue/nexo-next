@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, CirclePause, MessageSquare, Play, Send, ThumbsUp, X } from "lucide-react";
+import { Check, CirclePause, Clock3, Copy, GitBranch, Link2, MessageSquare, Play, Send, ThumbsUp, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatTimecode } from "@/lib/utils/timecode";
@@ -27,14 +27,21 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
   const [duration, setDuration] = useState(deliverable.durationSeconds ?? 0);
   const [currentTime, setCurrentTime] = useState(0);
   const [authorName, setAuthorName] = useState("");
+  const [authorEmail, setAuthorEmail] = useState("");
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const sortedComments = useMemo(
     () => [...comments].sort((a, b) => Number(a.timestampSeconds ?? 0) - Number(b.timestampSeconds ?? 0)),
     [comments],
   );
+  const nearbyComments = useMemo(
+    () => sortedComments.filter((comment) => Math.abs(Number(comment.timestampSeconds ?? 0) - currentTime) <= 4),
+    [currentTime, sortedComments],
+  );
+  const publicUrl = deliverable.publicUrl || (typeof window !== "undefined" ? window.location.href : "");
 
   useEffect(() => {
     const video = videoRef.current;
@@ -88,13 +95,20 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
       timestampSeconds: seconds,
       timecode: formatTimecode(seconds),
       authorName: authorName.trim() || "Cliente",
-      authorEmail: "",
+      authorEmail: authorEmail.trim(),
       authorType: "client",
       content: text,
     });
 
     setContent("");
     setSubmitting(false);
+  }
+
+  async function copyPublicLink() {
+    if (!publicUrl) return;
+    await navigator.clipboard?.writeText(publicUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2200);
   }
 
   const progress = duration ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
@@ -157,6 +171,25 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
               onChange={(event) => seekTo(Number(event.target.value))}
             />
           </div>
+          {sortedComments.length ? (
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              {sortedComments.map((comment) => (
+                <button
+                  key={`marker-${comment.id}`}
+                  className={`focus-ring inline-flex shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition ${
+                    Math.abs(Number(comment.timestampSeconds ?? 0) - currentTime) <= 4
+                      ? "border-cyan-300 bg-cyan-300/15 text-cyan-200"
+                      : "border-white/10 bg-white/[0.045] text-zinc-400 hover:text-white"
+                  }`}
+                  type="button"
+                  onClick={() => seekTo(comment.timestampSeconds ?? 0)}
+                >
+                  <Clock3 size={14} />
+                  {comment.timecode}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="grid gap-3 rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
@@ -176,12 +209,31 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
               </Button>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-[220px_1fr_auto]">
+          {nearbyComments.length ? (
+            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-3">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Comentários deste trecho</p>
+              <div className="mt-2 grid gap-2">
+                {nearbyComments.slice(0, 3).map((comment) => (
+                  <button key={`near-${comment.id}`} className="text-left text-sm font-bold leading-6 text-zinc-200" type="button" onClick={() => seekTo(comment.timestampSeconds ?? 0)}>
+                    {comment.timecode} · {comment.content}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div className="grid gap-3 sm:grid-cols-[180px_200px_1fr_auto]">
             <input
               className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
               placeholder="Seu nome"
               value={authorName}
               onChange={(event) => setAuthorName(event.target.value)}
+            />
+            <input
+              className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+              placeholder="E-mail"
+              type="email"
+              value={authorEmail}
+              onChange={(event) => setAuthorEmail(event.target.value)}
             />
             <input
               className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
@@ -207,9 +259,36 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Entregável</p>
               <h1 className="mt-2 text-2xl font-black leading-tight">{deliverable.title}</h1>
-              <p className="mt-2 text-sm text-zinc-500">Versão {deliverable.version ?? 1}</p>
+              <p className="mt-2 text-sm text-zinc-500">Versão {deliverable.version ?? 1} · Rodada {deliverable.revisionRound ?? 1}</p>
             </div>
             <Badge color={statusMeta[deliverable.status].color}>{statusMeta[deliverable.status].label}</Badge>
+          </div>
+          <div className="mt-5 grid grid-cols-3 gap-2 text-xs font-black">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-zinc-400">
+              Status<br />
+              <span className="text-orange-300">{statusMeta[deliverable.status].label}</span>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-zinc-400">
+              Versão<br />
+              <span className="text-cyan-300">v{deliverable.version ?? 1}</span>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-zinc-400">
+              Ajustes<br />
+              <span className="text-emerald-300">{sortedComments.length}</span>
+            </div>
+          </div>
+          <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+              <Link2 size={14} />
+              Link público
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <p className="min-w-0 flex-1 truncate text-sm font-bold text-zinc-300">{publicUrl}</p>
+              <button className="grid size-10 place-items-center rounded-2xl border border-white/10 bg-white/[0.045] text-zinc-300" type="button" onClick={copyPublicLink} aria-label="Copiar link público">
+                <Copy size={16} />
+              </button>
+            </div>
+            {copied ? <p className="mt-2 text-xs font-black text-emerald-300">Link copiado.</p> : null}
           </div>
           <div className="mt-5 grid gap-2">
             <Button variant="success" onClick={() => onStatusChange("approved")}>
@@ -231,6 +310,10 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-black">Comentários</h2>
             <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-zinc-300">{sortedComments.length}</span>
+          </div>
+          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+            <GitBranch className="mb-2 text-violet-300" size={16} />
+            Threads por timestamp preparadas para respostas e resolução.
           </div>
           <div className="mt-4 grid max-h-[620px] gap-3 overflow-auto pr-1">
             {sortedComments.length ? (

@@ -1,7 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import type { Session, User } from "@supabase/supabase-js";
 import { studioDocById, type PipelineKey, type RelationshipType, type StudioDocId, presetById } from "@/lib/constants";
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   INITIAL_WORKSPACE_STATE,
   buildClient,
@@ -9,9 +11,23 @@ import {
   buildProject,
   createId,
   getClientName,
+  normalizeWorkspaceState,
+  type BusinessProfile,
+  type ClientRecord,
   type StudioDocumentRecord,
   type WorkspaceState,
 } from "@/lib/workspace-state";
+import {
+  deleteClient,
+  deleteProject,
+  insertClient,
+  insertDocument,
+  insertProject,
+  loadCloudWorkspace,
+  updateBusinessProfile as updateCloudBusinessProfile,
+  updateProjectChecklist,
+  updateProjectPipeline,
+} from "@/services/workspace-service";
 
 const STORAGE_KEY = "nexo-next-workspace-state";
 
@@ -24,7 +40,7 @@ function readStoredState() {
 
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? (JSON.parse(saved) as WorkspaceState) : INITIAL_WORKSPACE_STATE;
+    return saved ? normalizeWorkspaceState(JSON.parse(saved) as Partial<WorkspaceState>) : INITIAL_WORKSPACE_STATE;
   } catch {
     return INITIAL_WORKSPACE_STATE;
   }
@@ -33,16 +49,75 @@ function readStoredState() {
 function useWorkspaceStateModel() {
   const [state, setState] = useState<WorkspaceState>(INITIAL_WORKSPACE_STATE);
   const [ready, setReady] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<"local" | "loading" | "cloud" | "error">("local");
+  const [syncMessage, setSyncMessage] = useState("");
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+
+  const hydrateCloud = useCallback(async (nextSession: Session | null) => {
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+
+    if (!supabase || !nextSession?.user) {
+      setWorkspaceId(null);
+      setSyncStatus("local");
+      setSyncMessage(supabase ? "Dados locais até entrar." : "Supabase não configurado.");
+      setState(readStoredState());
+      setReady(true);
+      return;
+    }
+
+    setSyncStatus("loading");
+    setSyncMessage("Sincronizando workspace...");
+
+    try {
+      const cloud = await loadCloudWorkspace(supabase, nextSession.user);
+      setWorkspaceId(cloud.workspaceId);
+      setState(cloud.state);
+      setSyncStatus("cloud");
+      setSyncMessage("Workspace conectado ao Supabase.");
+    } catch (error) {
+      console.error(error);
+      setWorkspaceId(null);
+      setState(readStoredState());
+      setSyncStatus("error");
+      setSyncMessage("Supabase conectado, mas o schema/RLS ainda precisa ser aplicado.");
+    } finally {
+      setReady(true);
+    }
+  }, [supabase]);
 
   useEffect(() => {
-    setState(readStoredState());
-    setReady(true);
-  }, []);
+    if (!supabase) {
+      setState(readStoredState());
+      setSyncMessage("Supabase não configurado.");
+      setReady(true);
+      return undefined;
+    }
+
+    let active = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      hydrateCloud(data.session);
+    });
+
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      hydrateCloud(nextSession);
+    });
+
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
+  }, [hydrateCloud, supabase]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || session) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [ready, state]);
+  }, [ready, session, state]);
 
   const metrics = useMemo(() => {
     const receivable = state.financeEntries
@@ -70,10 +145,38 @@ function useWorkspaceStateModel() {
 
   const actions = useMemo(
     () => ({
-      addClient(input: { name: string; relationshipType: RelationshipType; presetId: string; playbookId?: string }) {
+      addClient(
+        input: {
+          name: string;
+          relationshipType: RelationshipType;
+          presetId: string;
+          playbookId?: string;
+          nextAction?: string;
+        } & Partial<ClientRecord>,
+      ) {
         const client = buildClient(input);
         setState((current) => ({ ...current, clients: [client, ...current.clients] }));
+        if (supabase && workspaceId) {
+          insertClient(supabase, workspaceId, client).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível salvar cliente no Supabase.");
+          });
+        }
         return client;
+      },
+      updateBusinessProfile(input: Partial<BusinessProfile>) {
+        setState((current) => {
+          const businessProfile = { ...current.businessProfile, ...input };
+          if (supabase && workspaceId) {
+            updateCloudBusinessProfile(supabase, workspaceId, businessProfile).catch((error) => {
+              console.error(error);
+              setSyncStatus("error");
+              setSyncMessage("Não foi possível salvar configurações no Supabase.");
+            });
+          }
+          return { ...current, businessProfile };
+        });
       },
       removeClient(clientId: string) {
         setState((current) => ({
@@ -82,10 +185,24 @@ function useWorkspaceStateModel() {
           projects: current.projects.filter((project) => project.clientId !== clientId),
           financeEntries: current.financeEntries.filter((entry) => entry.clientId !== clientId),
         }));
+        if (supabase && workspaceId) {
+          deleteClient(supabase, clientId).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível excluir cliente no Supabase.");
+          });
+        }
       },
       addProject(input: { clientId: string; presetId: string; title?: string; deadline?: string; budget?: number }) {
         const project = buildProject(input);
         setState((current) => ({ ...current, projects: [project, ...current.projects] }));
+        if (supabase && workspaceId) {
+          insertProject(supabase, workspaceId, project).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível salvar projeto no Supabase.");
+          });
+        }
         return project;
       },
       removeProject(projectId: string) {
@@ -95,27 +212,56 @@ function useWorkspaceStateModel() {
           financeEntries: current.financeEntries.filter((entry) => entry.projectId !== projectId),
           documents: current.documents.filter((doc) => doc.projectId !== projectId),
         }));
+        if (supabase && workspaceId) {
+          deleteProject(supabase, projectId).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível excluir projeto no Supabase.");
+          });
+        }
       },
       togglePipeline(projectId: string, key: PipelineKey) {
-        setState((current) => ({
-          ...current,
-          projects: current.projects.map((project) =>
-            project.id === projectId ? { ...project, pipeline: { ...project.pipeline, [key]: !project.pipeline[key] } } : project,
-          ),
-        }));
+        setState((current) => {
+          let updatedProject: WorkspaceState["projects"][number] | undefined;
+          const projects = current.projects.map((project) => {
+            if (project.id !== projectId) return project;
+            updatedProject = { ...project, pipeline: { ...project.pipeline, [key]: !project.pipeline[key] } };
+            return updatedProject;
+          });
+
+          if (supabase && workspaceId && updatedProject) {
+            updateProjectPipeline(supabase, updatedProject).catch((error) => {
+              console.error(error);
+              setSyncStatus("error");
+              setSyncMessage("Não foi possível sincronizar pipeline.");
+            });
+          }
+
+          return { ...current, projects };
+        });
       },
       toggleChecklist(projectId: string, index: number) {
-        setState((current) => ({
-          ...current,
-          projects: current.projects.map((project) =>
-            project.id === projectId
-              ? {
-                  ...project,
-                  checklist: project.checklist.map((item, itemIndex) => (itemIndex === index ? { ...item, done: !item.done } : item)),
-                }
-              : project,
-          ),
-        }));
+        setState((current) => {
+          let updatedProject: WorkspaceState["projects"][number] | undefined;
+          const projects = current.projects.map((project) => {
+            if (project.id !== projectId) return project;
+            updatedProject = {
+              ...project,
+              checklist: project.checklist.map((item, itemIndex) => (itemIndex === index ? { ...item, done: !item.done } : item)),
+            };
+            return updatedProject;
+          });
+
+          if (supabase && workspaceId && updatedProject) {
+            updateProjectChecklist(supabase, updatedProject).catch((error) => {
+              console.error(error);
+              setSyncStatus("error");
+              setSyncMessage("Não foi possível sincronizar checklist.");
+            });
+          }
+
+          return { ...current, projects };
+        });
       },
       saveDocument(input: {
         docType: StudioDocId;
@@ -155,6 +301,13 @@ function useWorkspaceStateModel() {
         });
 
         if (!record) throw new Error("Não foi possível gerar o documento.");
+        if (supabase && workspaceId) {
+          insertDocument(supabase, workspaceId, record).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível salvar documento no Supabase.");
+          });
+        }
         return record as StudioDocumentRecord;
       },
       togglePrivacy() {
@@ -163,8 +316,31 @@ function useWorkspaceStateModel() {
       resetDemo() {
         setState(INITIAL_WORKSPACE_STATE);
       },
+      async signInWithGithub() {
+        if (!supabase) {
+          setSyncStatus("error");
+          setSyncMessage("Configure NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.");
+          return;
+        }
+
+        await supabase.auth.signInWithOAuth({
+          provider: "github",
+          options: {
+            redirectTo: window.location.origin,
+          },
+        });
+      },
+      async signOut() {
+        await supabase?.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setWorkspaceId(null);
+        setSyncStatus("local");
+        setSyncMessage("Sessão encerrada. Usando dados locais.");
+        setState(readStoredState());
+      },
     }),
-    [],
+    [supabase, workspaceId],
   );
 
   return {
@@ -172,6 +348,12 @@ function useWorkspaceStateModel() {
     ready,
     metrics,
     setState,
+    session,
+    user,
+    workspaceId,
+    supabaseConfigured: isSupabaseConfigured(),
+    syncStatus,
+    syncMessage,
     actions,
   };
 }

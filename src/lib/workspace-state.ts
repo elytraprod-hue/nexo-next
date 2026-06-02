@@ -13,6 +13,16 @@ export type ClientRecord = {
   company?: string;
   email?: string;
   phone?: string;
+  whatsapp?: string;
+  role?: string;
+  leadSource?: string;
+  referral?: string;
+  acquisitionChannel?: string;
+  contactReason?: string;
+  desiredService?: string;
+  estimatedBudget?: number;
+  assignedTo?: string;
+  contactHistory: string[];
   relationshipType: RelationshipType;
   status: "lead" | "ativo" | "pausado";
   leadTemp: "frio" | "morno" | "quente";
@@ -26,6 +36,23 @@ export type ClientRecord = {
   nextAction: string;
   notes?: string;
   createdAt: string;
+};
+
+export type BusinessProfile = {
+  name: string;
+  legalName: string;
+  documentNumber: string;
+  logoUrl: string;
+  address: string;
+  phone: string;
+  email: string;
+  siteUrl: string;
+  socialInstagram: string;
+  socialLinkedin: string;
+  socialYoutube: string;
+  defaultSignature: string;
+  bankInfo: string;
+  fiscalInfo: string;
 };
 
 export type ProjectRecord = {
@@ -68,11 +95,29 @@ export type FinanceEntry = {
 };
 
 export type WorkspaceState = {
+  businessProfile: BusinessProfile;
   clients: ClientRecord[];
   projects: ProjectRecord[];
   documents: StudioDocumentRecord[];
   financeEntries: FinanceEntry[];
   privacyMode: boolean;
+};
+
+export const DEFAULT_BUSINESS_PROFILE: BusinessProfile = {
+  name: "DNZ Films",
+  legalName: "DNZ Films Produções Audiovisuais",
+  documentNumber: "",
+  logoUrl: "",
+  address: "",
+  phone: "",
+  email: "elytraprod@gmail.com",
+  siteUrl: "https://dnzcentral.com.br",
+  socialInstagram: "@dnzfilms",
+  socialLinkedin: "",
+  socialYoutube: "",
+  defaultSignature: "Equipe DNZ Films",
+  bankInfo: "",
+  fiscalInfo: "",
 };
 
 const today = new Date();
@@ -84,8 +129,12 @@ export function addDaysInput(days: number) {
 }
 
 export function createId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return `${prefix}-${crypto.randomUUID()}`;
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  void prefix;
+
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+
+  const random = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).slice(1);
+  return `${random()}${random()}-${random()}-${random()}-${random()}-${random()}${random()}${random()}`;
 }
 
 function pipelineInitialState(done: PipelineKey[] = []) {
@@ -122,9 +171,27 @@ export function buildProject(input: {
 export function buildClient(input: {
   id?: string;
   name: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  role?: string;
+  leadSource?: string;
+  referral?: string;
+  acquisitionChannel?: string;
+  contactReason?: string;
+  desiredService?: string;
+  estimatedBudget?: number;
+  status?: ClientRecord["status"];
+  leadTemp?: ClientRecord["leadTemp"];
+  payment?: ClientRecord["payment"];
+  assignedTo?: string;
+  notes?: string;
+  contactHistory?: string[];
   relationshipType: RelationshipType;
   presetId: string;
   playbookId?: string;
+  nextAction?: string;
   createdAt?: string;
 }): ClientRecord {
   const preset = presetById(input.presetId);
@@ -135,20 +202,61 @@ export function buildClient(input: {
   return {
     id: input.id ?? createId("client"),
     name: input.name.trim() || playbook?.niche || "Novo cliente",
-    company: playbook?.niche,
+    company: input.company?.trim() || playbook?.niche,
+    email: input.email?.trim() || undefined,
+    phone: input.phone?.trim() || undefined,
+    whatsapp: input.whatsapp?.trim() || input.phone?.trim() || undefined,
+    role: input.role?.trim() || undefined,
+    leadSource: input.leadSource?.trim() || "Indicação",
+    referral: input.referral?.trim() || undefined,
+    acquisitionChannel: input.acquisitionChannel?.trim() || "WhatsApp",
+    contactReason: input.contactReason?.trim() || playbook?.promise || preset.defaultBriefing.objective,
+    desiredService: input.desiredService?.trim() || preset.service,
+    estimatedBudget: input.estimatedBudget ?? value,
+    assignedTo: input.assignedTo?.trim() || "Eu",
+    contactHistory: input.contactHistory?.filter(Boolean) ?? [],
     relationshipType,
-    status: relationshipType === "freelancer" ? "ativo" : "lead",
-    leadTemp: relationshipType === "recorrente" ? "quente" : "morno",
-    payment: "pendente",
+    status: input.status ?? (relationshipType === "freelancer" ? "ativo" : "lead"),
+    leadTemp: input.leadTemp ?? (relationshipType === "recorrente" ? "quente" : "morno"),
+    payment: input.payment ?? "pendente",
     service: preset.service,
     value,
     monthlyValue: relationshipType === "recorrente" ? value : undefined,
     partnerTerms: relationshipType === "parceria" ? "Permuta ou indicação a alinhar" : undefined,
     freelancerRole: relationshipType === "freelancer" ? "Captação / edição" : undefined,
     freelancerRate: relationshipType === "freelancer" ? value : undefined,
-    nextAction: playbook?.nextAction ?? "Enviar proposta com escopo e próximo passo",
-    notes: playbook?.promise,
+    nextAction: input.nextAction?.trim() || playbook?.nextAction || "Enviar proposta com escopo e próximo passo",
+    notes: input.notes?.trim() || playbook?.promise,
     createdAt: input.createdAt ?? new Date().toISOString(),
+  };
+}
+
+export function normalizeBusinessProfile(profile?: Partial<BusinessProfile>): BusinessProfile {
+  return { ...DEFAULT_BUSINESS_PROFILE, ...(profile ?? {}) };
+}
+
+export function normalizeClient(client: ClientRecord): ClientRecord {
+  return {
+    ...client,
+    whatsapp: client.whatsapp ?? client.phone,
+    leadSource: client.leadSource ?? "Indicação",
+    acquisitionChannel: client.acquisitionChannel ?? "WhatsApp",
+    contactReason: client.contactReason ?? client.notes ?? "Contato comercial",
+    desiredService: client.desiredService ?? client.service,
+    estimatedBudget: client.estimatedBudget ?? client.monthlyValue ?? client.value,
+    assignedTo: client.assignedTo ?? "Eu",
+    contactHistory: client.contactHistory ?? [],
+  };
+}
+
+export function normalizeWorkspaceState(state: Partial<WorkspaceState> | undefined): WorkspaceState {
+  return {
+    businessProfile: normalizeBusinessProfile(state?.businessProfile),
+    clients: (state?.clients ?? INITIAL_WORKSPACE_STATE.clients).map(normalizeClient),
+    projects: state?.projects ?? INITIAL_WORKSPACE_STATE.projects,
+    documents: state?.documents ?? INITIAL_WORKSPACE_STATE.documents,
+    financeEntries: state?.financeEntries ?? INITIAL_WORKSPACE_STATE.financeEntries,
+    privacyMode: Boolean(state?.privacyMode),
   };
 }
 
@@ -209,6 +317,7 @@ firstProject.checklist[0].done = true;
 firstProject.checklist[1].done = true;
 
 export const INITIAL_WORKSPACE_STATE: WorkspaceState = {
+  businessProfile: DEFAULT_BUSINESS_PROFILE,
   clients: [firstClient, secondClient],
   projects: [
     firstProject,

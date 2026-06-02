@@ -1,6 +1,8 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { ReviewDeliverable, ReviewStatus, VideoComment } from "@/types/review";
 
+export const REVIEW_VIDEO_BUCKET = "review-videos";
+
 type DeliverableRow = {
   id: string;
   project_id?: string | null;
@@ -35,6 +37,20 @@ type CommentRow = {
   created_at?: string | null;
 };
 
+type CreateReviewDeliverableInput = {
+  projectId?: string;
+  publicUrl?: string;
+  reviewToken: string;
+  title: string;
+  videoSource: ReviewDeliverable["videoSource"];
+  videoUrl: string;
+  workspaceId: string;
+};
+
+function selectDeliverableColumns() {
+  return "id,project_id,title,version,video_url,public_url,drive_file_id,video_source,thumbnail_url,duration_seconds,review_token,status,revision_round,expires_at,created_at,updated_at";
+}
+
 function mapDeliverable(row: DeliverableRow): ReviewDeliverable {
   return {
     id: row.id,
@@ -54,6 +70,83 @@ function mapDeliverable(row: DeliverableRow): ReviewDeliverable {
     createdAt: row.created_at ?? undefined,
     updatedAt: row.updated_at ?? undefined,
   };
+}
+
+export function createReviewToken() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return `rvw-${crypto.randomUUID()}`;
+  return `rvw-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function inferReviewVideoSource(url: string, fallback: ReviewDeliverable["videoSource"] = "direct"): ReviewDeliverable["videoSource"] {
+  const normalized = url.toLowerCase();
+  if (normalized.includes(".m3u8")) return "hls";
+  if (normalized.includes("drive.google.com")) return "drive";
+  return fallback;
+}
+
+function sanitizeFileName(name: string) {
+  const [base = "video", ...extensionParts] = name.split(".");
+  const extension = extensionParts.length ? `.${extensionParts.pop()?.toLowerCase()}` : "";
+  const safeBase = base
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9-_]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+
+  return `${safeBase || "video"}${extension}`;
+}
+
+export async function uploadReviewVideoFile(input: {
+  file: File;
+  reviewToken: string;
+  workspaceId: string;
+}) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) throw new Error("Supabase não configurado.");
+
+  const safeName = sanitizeFileName(input.file.name);
+  const path = `${input.workspaceId}/${input.reviewToken}/${Date.now()}-${safeName}`;
+  const { data, error } = await supabase.storage.from(REVIEW_VIDEO_BUCKET).upload(path, input.file, {
+    cacheControl: "3600",
+    contentType: input.file.type || "video/mp4",
+    upsert: false,
+  });
+
+  if (error) throw error;
+
+  const { data: publicData } = supabase.storage.from(REVIEW_VIDEO_BUCKET).getPublicUrl(data.path);
+
+  return {
+    path: data.path,
+    videoUrl: publicData.publicUrl,
+  };
+}
+
+export async function createReviewDeliverable(input: CreateReviewDeliverableInput) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) throw new Error("Supabase não configurado.");
+
+  const { data, error } = await supabase
+    .from("deliverables")
+    .insert({
+      workspace_id: input.workspaceId,
+      project_id: input.projectId || null,
+      title: input.title.trim() || "Review de vídeo",
+      review_token: input.reviewToken,
+      video_url: input.videoUrl,
+      public_url: input.publicUrl || null,
+      video_source: input.videoSource,
+      status: "waiting_review",
+      revision_round: 1,
+      version: 1,
+    })
+    .select(selectDeliverableColumns())
+    .single<DeliverableRow>();
+
+  if (error) throw error;
+
+  return mapDeliverable(data);
 }
 
 function mapComment(row: CommentRow): VideoComment {
@@ -79,9 +172,7 @@ export async function getDeliverableByToken(token: string) {
 
   const { data, error } = await supabase
     .from("deliverables")
-    .select(
-      "id,project_id,title,version,video_url,public_url,drive_file_id,video_source,thumbnail_url,duration_seconds,review_token,status,revision_round,expires_at,created_at,updated_at",
-    )
+    .select(selectDeliverableColumns())
     .eq("review_token", token)
     .limit(1)
     .maybeSingle<DeliverableRow>();
@@ -147,9 +238,7 @@ export async function updateDeliverableStatus(deliverableId: string, status: Rev
     .from("deliverables")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", deliverableId)
-    .select(
-      "id,project_id,title,version,video_url,public_url,drive_file_id,video_source,thumbnail_url,duration_seconds,review_token,status,revision_round,expires_at,created_at,updated_at",
-    )
+    .select(selectDeliverableColumns())
     .single<DeliverableRow>();
 
   if (error || !data) return null;

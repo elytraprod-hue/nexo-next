@@ -9,12 +9,13 @@ import { ReviewPlayer } from "@/features/video-review/review-player";
 import { createVideoComment, getCommentsByDeliverable, getDeliverableByToken, updateDeliverableStatus } from "@/services/review-service";
 import type { ReviewDeliverable, ReviewStatus, VideoComment } from "@/types/review";
 
-const fallbackDeliverable = (token: string): ReviewDeliverable => ({
+const fallbackDeliverable = (token: string, initialVideoUrl?: string, initialTitle?: string, initialVideoSource: "direct" | "hls" | "drive" = "direct"): ReviewDeliverable => ({
   id: "demo",
-  title: "Review de vídeo",
+  title: initialTitle || (token === "demo" ? "Review demo NEXO" : "Review de vídeo"),
   version: 1,
-  videoUrl: "",
-  videoSource: "direct",
+  videoUrl: initialVideoUrl || (token === "demo" ? "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" : ""),
+  videoSource: initialVideoSource,
+  durationSeconds: token === "demo" ? 15 : undefined,
   reviewToken: token,
   status: "waiting_review",
   revisionRound: 1,
@@ -34,10 +35,13 @@ const fallbackDeliverable = (token: string): ReviewDeliverable => ({
 });
 
 type ReviewPageProps = {
+  initialTitle?: string;
+  initialVideoSource?: "direct" | "hls" | "drive";
+  initialVideoUrl?: string;
   token: string;
 };
 
-export function ReviewPage({ token }: ReviewPageProps) {
+export function ReviewPage({ initialTitle, initialVideoSource = "direct", initialVideoUrl, token }: ReviewPageProps) {
   const [deliverable, setDeliverable] = useState<ReviewDeliverable | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,8 +57,8 @@ export function ReviewPage({ token }: ReviewPageProps) {
       if (!active) return;
 
       if (!loaded) {
-        setDeliverable(fallbackDeliverable(token));
-        setError("Supabase ainda não retornou esse token. Mantive uma tela de review funcional para teste local.");
+        setDeliverable(fallbackDeliverable(token, initialVideoUrl, initialTitle, initialVideoSource));
+        setError(token === "demo" ? "" : "Supabase ainda não retornou esse token. Mantive uma tela de review funcional para teste local.");
         setLoading(false);
         return;
       }
@@ -68,7 +72,7 @@ export function ReviewPage({ token }: ReviewPageProps) {
 
     load().catch(() => {
       if (!active) return;
-      setDeliverable(fallbackDeliverable(token));
+      setDeliverable(fallbackDeliverable(token, initialVideoUrl, initialTitle, initialVideoSource));
       setError("Não foi possível carregar o review agora.");
       setLoading(false);
     });
@@ -76,7 +80,7 @@ export function ReviewPage({ token }: ReviewPageProps) {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [initialTitle, initialVideoSource, initialVideoUrl, token]);
 
   const comments = useMemo(() => deliverable?.comments ?? [], [deliverable?.comments]);
 

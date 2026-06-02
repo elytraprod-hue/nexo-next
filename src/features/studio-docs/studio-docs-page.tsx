@@ -9,6 +9,7 @@ import { Surface } from "@/components/ui/surface";
 import { AUDIOVISUAL_PRESETS, DOC_FIELD_CONFIG, STUDIO_DOCUMENTS, type StudioDocId, presetById, studioDocById } from "@/lib/constants";
 import { useWorkspaceState } from "@/hooks/use-workspace-state";
 import { buildDocumentSummary, getClientName } from "@/lib/workspace-state";
+import { buildStudioDocumentHtml } from "@/lib/studio-document-html";
 
 type Payload = Record<string, string>;
 
@@ -39,6 +40,21 @@ export function StudioDocsPage() {
       }),
     [clientName, config.tone, doc.label, payload, preset.title, project?.title],
   );
+  const previewHtml = useMemo(
+    () =>
+      buildStudioDocumentHtml({
+        businessProfile: state.businessProfile,
+        docLabel: doc.label,
+        docColor: doc.color,
+        title: project?.title || `${doc.label} · ${preset.title}`,
+        subtitle: config.tone,
+        clientName,
+        projectTitle: project?.title || preset.title,
+        presetTitle: preset.title,
+        payload,
+      }),
+    [clientName, config.tone, doc.color, doc.label, payload, preset.title, project?.title, state.businessProfile],
+  );
 
   function setPayloadValue(key: string, value: string) {
     setPayload((current) => ({ ...current, [key]: value }));
@@ -64,6 +80,14 @@ export function StudioDocsPage() {
     setLatestId(record.id);
   }
 
+  function exportPdf() {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write(previewHtml);
+    printWindow.document.close();
+    window.setTimeout(() => printWindow.print(), 500);
+  }
+
   return (
     <AppShell
       eyebrow="Studio Docs"
@@ -71,18 +95,23 @@ export function StudioDocsPage() {
       subtitle="Documentos pensados para audiovisual, com campos próprios e histórico salvo."
       title="Documentos"
     >
-      <section className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+      <section className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
         <div className="grid gap-4">
-          <Surface>
+          <Surface className="xl:sticky xl:top-32">
             <div className="flex items-center gap-3">
               <FileText className="text-cyan-300" />
               <h2 className="text-xl font-black">Tipo de documento</h2>
             </div>
-            <div className="mt-5 grid gap-2">
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-zinc-500">
+              <span className="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-2 py-2 text-cyan-300">1. Tipo</span>
+              <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2">2. Base</span>
+              <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2">3. PDF</span>
+            </div>
+            <div className="mt-5 grid gap-3">
               {STUDIO_DOCUMENTS.map((item) => (
                 <button
                   key={item.id}
-                  className={`focus-ring rounded-2xl border p-4 text-left transition ${
+                  className={`focus-ring rounded-2xl border p-3 text-left transition ${
                     docType === item.id ? "border-cyan-300 bg-cyan-300/10" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07]"
                   }`}
                   type="button"
@@ -95,7 +124,7 @@ export function StudioDocsPage() {
                     <h3 className="font-black">{item.label}</h3>
                     <span className="mt-1 h-2 w-8 rounded-full" style={{ background: item.color }} />
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-zinc-500">{item.description}</p>
+                  <p className="mt-2 text-xs font-bold leading-5 text-zinc-500">{item.description}</p>
                 </button>
               ))}
             </div>
@@ -116,7 +145,10 @@ export function StudioDocsPage() {
               </Button>
             </div>
 
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
+            <div className="mt-7 rounded-[26px] border border-white/10 bg-white/[0.035] p-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Base do documento</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-500">Escolha cliente, projeto e tipo de produção. O restante do documento usa essas escolhas como contexto.</p>
+              <div className="mt-4 grid gap-4 lg:grid-cols-3">
               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                 Cliente
                 <select
@@ -159,52 +191,66 @@ export function StudioDocsPage() {
                   ))}
                 </select>
               </label>
+              </div>
             </div>
 
-            <div className="mt-6 grid gap-3 md:grid-cols-2">
-              {config.fields.map((field) => (
-                <label key={field.key} className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
-                  {field.label}
-                  <input
-                    className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
-                    placeholder={field.placeholder}
-                    type={field.type ?? "text"}
-                    value={payload[field.label] ?? ""}
-                    onChange={(event) => setPayloadValue(field.label, event.target.value)}
-                  />
-                </label>
-              ))}
-            </div>
+            <div className="mt-5 rounded-[26px] border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">Informações específicas</p>
+              <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                {config.fields.map((field) => (
+                  <label key={field.key} className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                    {field.label}
+                    <input
+                      className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
+                      placeholder={field.placeholder}
+                      type={field.type ?? "text"}
+                      value={payload[field.label] ?? ""}
+                      onChange={(event) => setPayloadValue(field.label, event.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {config.areas.map((area) => (
-                <label key={area.key} className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
-                  {area.label}
-                  <textarea
-                    className="focus-ring min-h-32 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
-                    placeholder={area.placeholder}
-                    value={payload[area.label] ?? ""}
-                    onChange={(event) => setPayloadValue(area.label, event.target.value)}
-                  />
-                </label>
-              ))}
+              <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                {config.areas.map((area) => (
+                  <label key={area.key} className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                    {area.label}
+                    <textarea
+                      className="focus-ring min-h-40 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
+                      placeholder={area.placeholder}
+                      value={payload[area.label] ?? ""}
+                      onChange={(event) => setPayloadValue(area.label, event.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
           </Surface>
 
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_340px]">
             <Surface>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <Sparkles className="text-orange-400" />
                   <h2 className="text-xl font-black">Preview do documento</h2>
                 </div>
-                <button className="inline-flex items-center gap-2 text-sm font-black text-zinc-400" type="button">
+                <button className="inline-flex items-center gap-2 text-sm font-black text-orange-300" type="button" onClick={exportPdf}>
                   <Download size={16} />
-                  PDF em breve
+                  Exportar PDF
                 </button>
               </div>
               {latestId ? <p className="mt-3 text-sm font-bold text-emerald-300">Documento salvo no histórico.</p> : null}
-              <pre className="mt-5 whitespace-pre-wrap rounded-3xl border border-white/10 bg-black/35 p-5 text-sm leading-7 text-zinc-200">{preview}</pre>
+              <div className="mt-5 overflow-hidden rounded-3xl border border-white/10 bg-black/35">
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                  <span>Preview PDF</span>
+                  <span className="text-orange-300">{preset.label}</span>
+                </div>
+                <iframe className="h-[620px] w-full bg-[#f6f1e8]" title="Preview do documento" srcDoc={previewHtml} />
+              </div>
+              <details className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                <summary className="cursor-pointer text-sm font-black text-zinc-300">Ver texto estruturado</summary>
+                <pre className="mt-4 whitespace-pre-wrap text-sm leading-7 text-zinc-300">{preview}</pre>
+              </details>
             </Surface>
 
             <Surface>

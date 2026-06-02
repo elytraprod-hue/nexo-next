@@ -71,26 +71,26 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     () => [
       {
         id: "lead-clinica",
-        label: "Lead de clínica + reel",
-        description: "Cria cliente com playbook de estética, preset de reel e próxima ação.",
+        label: "Clínica + reel",
+        description: "Cria cliente com modelo de estética, preset de reel e próxima ação.",
         icon: UserRoundPlus,
         color: "var(--green)",
-        keywords: "cliente lead clinica estética reel",
+        keywords: "cliente contato clinica estética reel",
         run: () => {
           actions.addClient({ name: "Clínica estética", relationshipType: "cliente", presetId: "reel", playbookId: "clinica" });
-          return "Lead criado com playbook de clínica.";
+          return "Cliente criado com modelo de clínica.";
         },
       },
       {
         id: "lead-imobiliario",
-        label: "Lead imobiliário + drone",
+        label: "Imobiliária + drone",
         description: "Cria oportunidade com narrativa de imóvel, drone e próxima ação.",
         icon: WandSparkles,
         color: "var(--cyan)",
-        keywords: "cliente lead imobiliaria corretor drone",
+        keywords: "cliente contato imobiliaria corretor drone",
         run: () => {
           actions.addClient({ name: "Imobiliária / corretor", relationshipType: "cliente", presetId: "drone", playbookId: "imobiliario" });
-          return "Lead imobiliário criado com preset de drone.";
+          return "Oportunidade imobiliária criada com preset de drone.";
         },
       },
       {
@@ -170,13 +170,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       },
       {
         id: "open-review",
-        label: "Abrir review demo",
-        description: "Vai para a tela de aprovação com comentários por timestamp.",
+        label: "Criar review de vídeo",
+        description: "Abre o hub de aprovação com upload, link público e comentários por timestamp.",
         icon: MessageSquareReply,
         color: "var(--orange)",
-        keywords: "review aprovação video frame comentarios",
+        keywords: "review aprovação video upload frame comentarios",
         run: () => {
-          router.push("/review/demo");
+          router.push("/review");
           onOpenChange(false);
           return "Review aberto.";
         },

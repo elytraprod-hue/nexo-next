@@ -145,14 +145,24 @@ export const NICHE_PLAYBOOKS = [
     presetId: "reel",
     value: 2400,
     nextAction: "Enviar roteiro de autoridade e exemplos de prova social",
+    nextActions: [
+      "Enviar roteiro de autoridade e exemplos de prova social",
+      "Montar pack de 3 reels: procedimento, depoimento e bastidor",
+      "Agendar visita técnica para mapear ambientes e restrições",
+    ],
   },
   {
     id: "imobiliario",
     niche: "Imobiliárias e corretores",
-    promise: "Transformar imóveis em percepção de valor e captação de leads.",
+    promise: "Transformar imóveis em percepção de valor e novos interessados.",
     presetId: "drone",
     value: 3500,
     nextAction: "Pedir endereço, diferenciais do imóvel e janela de captação",
+    nextActions: [
+      "Pedir endereço, diferenciais do imóvel e janela de captação",
+      "Criar roteiro de visita guiada com drone e detalhes internos",
+      "Separar lista de takes para anúncio e versão social",
+    ],
   },
   {
     id: "restaurante",
@@ -161,6 +171,11 @@ export const NICHE_PLAYBOOKS = [
     presetId: "stories",
     value: 1800,
     nextAction: "Marcar visita para captar pratos campeões e bastidores",
+    nextActions: [
+      "Marcar visita para captar pratos campeões e bastidores",
+      "Montar sequência de stories para menu, ambiente e chef",
+      "Pedir horários de menor movimento para diária enxuta",
+    ],
   },
   {
     id: "evento",
@@ -169,6 +184,11 @@ export const NICHE_PLAYBOOKS = [
     presetId: "evento",
     value: 4500,
     nextAction: "Pedir cronograma, atrações e momentos obrigatórios",
+    nextActions: [
+      "Pedir cronograma, atrações e momentos obrigatórios",
+      "Criar mapa de cobertura com chegada, pico e pós-evento",
+      "Definir lista de entrevistas rápidas com organizadores e público",
+    ],
   },
 ] as const;
 
@@ -200,7 +220,7 @@ export const PRODUCTION_PIPELINE = [
 export type PipelineKey = (typeof PRODUCTION_PIPELINE)[number]["key"];
 
 export const RELATIONSHIP_TYPES = [
-  { id: "cliente", label: "Cliente", color: "#10b981", description: "Venda pontual ou lead" },
+  { id: "cliente", label: "Cliente", color: "#10b981", description: "Venda pontual ou oportunidade" },
   { id: "recorrente", label: "Recorrente mensal", color: "#3b82f6", description: "Contrato, mensalidade e entregas recorrentes" },
   { id: "parceria", label: "Parceria / permuta", color: "#8b5cf6", description: "Troca, collab, indicação ou contrapartida" },
   { id: "freelancer", label: "Freelancer", color: "#eab308", description: "Equipe externa, função, diária e disponibilidade" },

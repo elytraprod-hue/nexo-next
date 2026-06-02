@@ -6,26 +6,36 @@ import { useEffect, useState } from "react";
 import {
   BarChart3,
   BriefcaseBusiness,
+  Bell,
   Clapperboard,
+  Command,
+  Eye,
+  EyeOff,
   FileText,
   Home,
+  Lock,
   MessageSquareReply,
   Plus,
   Search,
   Settings,
   Sparkles,
+  X,
   WalletCards,
 } from "lucide-react";
 import { CommandPalette } from "@/components/app/command-palette";
+import { AuthStatus } from "@/components/app/auth-status";
+import { useWorkspaceState } from "@/hooks/use-workspace-state";
 import { cn } from "@/lib/utils/cn";
+import { formatCurrency, formatDate } from "@/lib/utils/format";
 
 const navigation = [
-  { href: "/", label: "Hoje", icon: Home },
+  { href: "/dashboard", label: "Hoje", icon: Home },
   { href: "/clientes", label: "Comercial", icon: BriefcaseBusiness },
   { href: "/projetos", label: "Produção", icon: Clapperboard },
   { href: "/studio", label: "Studio Docs", icon: FileText },
   { href: "/financeiro", label: "Financeiro", icon: WalletCards },
-  { href: "/review/demo", label: "Review", icon: MessageSquareReply },
+  { href: "/review", label: "Review", icon: MessageSquareReply },
+  { href: "/configuracoes", label: "Empresa", icon: Settings },
 ];
 
 type AppShellProps = {
@@ -42,6 +52,12 @@ type AppShellProps = {
 export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Central", subtitle, primaryAction }: AppShellProps) {
   const pathname = usePathname();
   const [commandOpen, setCommandOpen] = useState(false);
+  const [dockOpen, setDockOpen] = useState(true);
+  const [locked, setLocked] = useState(false);
+  const [bootVisible, setBootVisible] = useState(true);
+  const [toast, setToast] = useState<string | null>(null);
+  const [intelHidden, setIntelHidden] = useState(false);
+  const { state, metrics, ready, user, syncStatus, syncMessage, actions } = useWorkspaceState();
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -54,21 +70,136 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  useEffect(() => {
+    if (!ready) return;
+    const timeout = window.setTimeout(() => setBootVisible(false), 620);
+    const lastExit = localStorage.getItem("nexo_last_exit");
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+    const name = user?.user_metadata?.name || user?.email?.split("@")[0] || "criador";
+    const message = lastExit ? `${greeting}, ${name}. Sessão restaurada.` : `${greeting}, ${name}. NEXO pronto para operar.`;
+    const welcome = window.setTimeout(() => setToast(message), 780);
+    const hide = window.setTimeout(() => setToast(null), 3900);
+
+    return () => {
+      window.clearTimeout(timeout);
+      window.clearTimeout(welcome);
+      window.clearTimeout(hide);
+    };
+  }, [ready, user]);
+
+  useEffect(() => {
+    const onHide = () => localStorage.setItem("nexo_last_exit", new Date().toISOString());
+    window.addEventListener("pagehide", onHide);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (syncStatus === "error" && syncMessage) {
+      setToast(syncMessage);
+      const timeout = window.setTimeout(() => setToast(null), 4600);
+      return () => window.clearTimeout(timeout);
+    }
+    return undefined;
+  }, [syncMessage, syncStatus]);
+
+  const intel = [
+    state.clients.filter((client) => client.status === "lead").length
+      ? {
+          id: "leads",
+          label: `${state.clients.filter((client) => client.status === "lead").length} cliente(s) para responder`,
+          href: "/clientes",
+          color: "var(--orange)",
+        }
+      : null,
+    state.projects.filter((project) => project.status === "review").length
+      ? {
+          id: "review",
+          label: `${state.projects.filter((project) => project.status === "review").length} projeto(s) em aprovação`,
+          href: "/review/demo",
+          color: "var(--cyan)",
+        }
+      : null,
+    state.projects.filter((project) => project.status !== "entregue" && project.deadline).length
+      ? {
+          id: "deadline",
+          label: `Próxima entrega: ${formatDate(
+            [...state.projects].filter((project) => project.status !== "entregue" && project.deadline).sort((a, b) => a.deadline.localeCompare(b.deadline))[0]
+              ?.deadline,
+          )}`,
+          href: "/projetos",
+          color: "var(--violet)",
+        }
+      : null,
+    metrics.receivable
+      ? {
+          id: "money",
+          label: `${formatCurrency(metrics.receivable, state.privacyMode)} a receber`,
+          href: "/financeiro",
+          color: "#facc15",
+        }
+      : null,
+  ].filter(Boolean) as { id: string; label: string; href: string; color: string }[];
+
   return (
     <main className="app-bg min-h-screen text-zinc-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1500px] gap-4 px-3 py-3 sm:px-4 lg:px-5">
-        <aside className="hidden w-[280px] shrink-0 flex-col gap-4 rounded-[32px] border border-white/10 bg-black/35 p-4 shadow-2xl backdrop-blur-2xl lg:flex">
-          <Link href="/" className="flex items-center gap-3 rounded-[24px] border border-orange-400/20 bg-orange-500/10 p-3">
-            <div className="grid size-14 place-items-center rounded-[20px] border border-orange-400/40 bg-orange-500 text-2xl font-black text-black shadow-[0_0_34px_rgba(255,106,0,0.35)]">
-              N
+      {bootVisible ? (
+        <div className="boot-loader">
+          <div className="boot-card">
+            <div className="boot-logo">N</div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-orange-300">NEXO Studio OS</p>
+            <h2 className="mt-3 text-2xl font-black leading-tight">Restaurando ambiente operacional</h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">Sessão, workspace, comandos e contexto do dia.</p>
+            <div className="boot-line"><span /></div>
+          </div>
+        </div>
+      ) : null}
+
+      {locked ? (
+        <div className="lock-screen" role="dialog" aria-modal="true" aria-label="Tela bloqueada">
+          <div className="lock-card">
+            <div className="grid size-14 place-items-center rounded-2xl bg-orange-500 text-2xl font-black text-black">N</div>
+            <p className="mt-5 text-xs font-black uppercase tracking-[0.22em] text-orange-300">Proteção ativa</p>
+            <h2 className="mt-2 text-3xl font-black">Tela bloqueada</h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-400">Valores, clientes e operação ficam protegidos neste navegador. Desbloqueie para voltar ao workspace.</p>
+            <div className="mt-5 grid grid-cols-2 gap-2 text-xs font-black">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-3 text-zinc-400">Privacidade<br /><span className="text-orange-300">{state.privacyMode ? "Oculta" : "Manual"}</span></div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-3 text-zinc-400">Cloud<br /><span className="text-emerald-300">{syncStatus === "cloud" ? "OK" : "Local"}</span></div>
             </div>
-            <div>
-              <p className="text-xl font-black leading-none tracking-wide">DNZ FILMS</p>
-              <p className="mt-1 text-xs font-black uppercase tracking-[0.28em] text-orange-400">Studio OS</p>
+            <button className="mt-5 min-h-12 w-full rounded-2xl bg-orange-500 text-sm font-black text-black" type="button" onClick={() => setLocked(false)}>
+              Desbloquear sessão
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {toast ? (
+        <div className="toast-premium" role="status" aria-live="polite">
+          <div className="toast-accent" />
+          <div className="toast-body">
+            <p className="toast-title">Sistema</p>
+            <p className="toast-msg">{toast}</p>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mx-auto flex min-h-screen w-full max-w-[1480px] gap-4 px-3 py-3 sm:px-4 lg:px-5">
+        <aside className="hidden w-[248px] shrink-0 flex-col gap-4 rounded-[28px] border border-white/10 bg-black/40 p-3 shadow-2xl backdrop-blur-2xl md:flex">
+          <Link href="/dashboard" className="flex items-center gap-3 rounded-[22px] border border-orange-400/20 bg-orange-500/10 p-3">
+            <div className="grid size-12 place-items-center rounded-[16px] border border-orange-400/40 bg-orange-500 text-2xl font-black text-black shadow-[0_0_34px_rgba(255,106,0,0.35)]">
+              {state.businessProfile.name.slice(0, 1) || "N"}
+            </div>
+            <div className="min-w-0">
+              <p className="display-font text-2xl font-black leading-none">NEXO</p>
+              <p className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.18em] text-orange-400">{state.businessProfile.name} OS</p>
             </div>
           </Link>
 
-          <div className="rounded-[24px] border border-white/10 bg-white/[0.045] p-3">
+          <div className="rounded-[22px] border border-white/10 bg-white/[0.045] p-3">
             <p className="px-2 text-[11px] font-black uppercase tracking-[0.22em] text-zinc-500">Acesso rápido</p>
             <nav className="mt-3 grid gap-1">
               {navigation.map((item) => {
@@ -80,8 +211,10 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex min-h-12 items-center gap-3 rounded-2xl px-3 text-sm font-black transition",
-                      active ? "bg-orange-500 text-black shadow-[0_12px_30px_rgba(255,106,0,0.24)]" : "text-zinc-400 hover:bg-white/[0.07] hover:text-white",
+                      "flex min-h-11 items-center gap-3 rounded-2xl px-3 text-sm font-black transition",
+                      active
+                        ? "os-left-accent border border-orange-400/30 bg-orange-500/15 text-orange-300 shadow-[0_12px_30px_rgba(255,106,0,0.12)]"
+                        : "border border-transparent text-zinc-400 hover:border-white/10 hover:bg-white/[0.07] hover:text-white",
                     )}
                   >
                     <Icon size={18} />
@@ -92,7 +225,32 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </nav>
           </div>
 
-          <div className="mt-auto rounded-[24px] border border-cyan-300/20 bg-cyan-300/10 p-4">
+          {primaryAction ? (
+            <Link
+              href={primaryAction.href}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-[18px] bg-orange-500 px-4 text-sm font-black text-black transition hover:bg-orange-400"
+            >
+              <Plus size={18} />
+              {primaryAction.label}
+            </Link>
+          ) : null}
+
+          <div className="rounded-[22px] border border-white/10 bg-white/[0.035] p-3">
+            <div className="flex items-center justify-between gap-2 text-xs font-black text-zinc-500">
+              <span>Modo</span>
+              <span className="text-orange-300">Operação</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button className="rounded-2xl border border-orange-400/30 bg-orange-500/15 px-3 py-2 text-xs font-black text-orange-300" type="button">
+                Simples
+              </button>
+              <button className="rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-black text-zinc-500" type="button">
+                Completo
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-auto rounded-[22px] border border-cyan-300/20 bg-cyan-300/10 p-4">
             <Sparkles className="text-cyan-300" size={22} />
             <p className="mt-4 text-sm font-black">Regra do produto</p>
             <p className="mt-2 text-sm leading-6 text-zinc-400">Menos cliques, menos digitação, mais operação audiovisual pronta.</p>
@@ -100,17 +258,17 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col gap-4">
-          <header className="sticky top-3 z-30 rounded-[28px] border border-white/10 bg-black/45 p-3 shadow-2xl backdrop-blur-2xl">
+          <header className="sticky top-3 z-30 rounded-[24px] border border-white/10 bg-black/50 p-3 shadow-2xl backdrop-blur-2xl">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">
                 <p className="text-[11px] font-black uppercase tracking-[0.28em] text-orange-400">{eyebrow}</p>
-                <h1 className="mt-1 truncate text-2xl font-black leading-tight sm:text-4xl">{title}</h1>
+                <h1 className="mt-1 text-2xl font-black leading-tight sm:text-4xl">{title}</h1>
                 {subtitle ? <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-400">{subtitle}</p> : null}
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  className="hidden min-h-11 min-w-[260px] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 text-left text-sm font-bold text-zinc-500 transition hover:text-zinc-300 md:flex"
+                  className="hidden min-h-11 min-w-[260px] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 text-left text-sm font-bold text-zinc-500 transition hover:text-zinc-300 xl:flex"
                   type="button"
                   onClick={() => setCommandOpen(true)}
                 >
@@ -118,26 +276,11 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
                   Comando rápido
                   <span className="ml-auto rounded-lg bg-white/10 px-2 py-1 text-[10px] text-zinc-400">⌘K</span>
                 </button>
-                {primaryAction ? (
-                  <Link
-                    href={primaryAction.href}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-orange-500 px-4 text-sm font-black text-black transition hover:bg-orange-400"
-                  >
-                    <Plus size={18} />
-                    {primaryAction.label}
-                  </Link>
-                ) : null}
-                <button
-                  type="button"
-                  aria-label="Configurações"
-                  className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.055] text-zinc-400 transition hover:text-white"
-                >
-                  <Settings size={18} />
-                </button>
+                <AuthStatus />
               </div>
             </div>
 
-            <nav className="mt-3 flex gap-2 overflow-x-auto lg:hidden">
+            <nav className="mt-3 flex gap-2 overflow-x-auto md:hidden">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
@@ -159,27 +302,63 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </nav>
           </header>
 
+          {intel.length && !intelHidden ? (
+            <section className="notification-slide flex flex-col gap-2 rounded-[24px] border border-orange-400/20 bg-orange-500/10 p-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 place-items-center rounded-2xl bg-orange-500/15 text-orange-300">
+                  <Bell size={17} />
+                </span>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">Contexto ativo</p>
+                  <p className="mt-1 text-sm font-bold text-zinc-300">{intel[0].label}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {intel.slice(0, 3).map((item) => (
+                  <Link key={item.id} className="rounded-2xl border px-3 py-2 text-xs font-black" href={item.href} style={{ borderColor: `${item.color}44`, color: item.color }}>
+                    {item.label}
+                  </Link>
+                ))}
+                <button className="grid size-9 place-items-center rounded-2xl border border-white/10 text-zinc-500" type="button" onClick={() => setIntelHidden(true)} aria-label="Fechar contexto">
+                  <X size={16} />
+                </button>
+              </div>
+            </section>
+          ) : null}
+
           {children}
 
-          <div className="fixed bottom-4 right-4 z-40 flex flex-col gap-2">
-            <Link
-              href="/clientes"
-              onClick={(event) => {
-                event.preventDefault();
-                setCommandOpen(true);
-              }}
-              className="grid size-14 place-items-center rounded-2xl border border-orange-400/30 bg-orange-500 text-black shadow-[0_18px_50px_rgba(255,106,0,0.35)] transition hover:scale-105"
-              title="Comando rápido"
-            >
-              <Plus size={24} />
-            </Link>
-            <Link
-              href="/financeiro"
-              className="grid size-12 place-items-center rounded-2xl border border-white/10 bg-black/60 text-zinc-300 shadow-xl backdrop-blur-xl transition hover:text-white"
-              title="Indicadores"
-            >
-              <BarChart3 size={20} />
-            </Link>
+          {dockOpen ? (
+            <div className="quick-dock" aria-label="Controles rápidos">
+              <button className="dock-btn active" aria-label="Esconder controles" type="button" onClick={() => setDockOpen(false)}>
+                <X size={16} />
+              </button>
+              <button className="dock-btn" aria-label="Comando rápido" type="button" onClick={() => setCommandOpen(true)} title="Comando rápido">
+                <Command size={17} />
+              </button>
+              <button className={`dock-btn ${state.privacyMode ? "active" : ""}`} aria-label="Privacidade de valores" type="button" onClick={actions.togglePrivacy} title="Privacidade de valores">
+                {state.privacyMode ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+              <button className="dock-btn" aria-label="Bloquear tela" type="button" onClick={() => setLocked(true)} title="Bloquear tela">
+                <Lock size={17} />
+              </button>
+              <Link className="dock-btn" aria-label="Indicadores" href="/financeiro" title="Indicadores">
+                <BarChart3 size={17} />
+              </Link>
+            </div>
+          ) : (
+            <button className="dock-toggle" aria-label="Mostrar controles rápidos" type="button" onClick={() => setDockOpen(true)} title="Mostrar controles">
+              <Command size={20} />
+            </button>
+          )}
+
+          <div className="floating-actions" aria-label="Ações principais">
+            <button className="float-action" type="button" onClick={() => setCommandOpen(true)}>
+              <Plus size={15} />
+              Criar
+            </button>
+            <Link href="/studio" className="float-action secondary">PDF</Link>
+            <Link href="/review/demo" className="float-action secondary">Review</Link>
           </div>
           <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
         </section>
