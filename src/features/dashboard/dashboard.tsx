@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -6,21 +8,17 @@ import {
   Clapperboard,
   FileText,
   Gauge,
-  PanelRightOpen,
+  MessageSquareReply,
   Sparkles,
   WalletCards,
 } from "lucide-react";
+import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Surface } from "@/components/ui/surface";
 import { AUDIOVISUAL_PRESETS, PRODUCTION_PIPELINE } from "@/lib/constants";
-import { formatCurrencyCompact } from "@/lib/utils/format";
-
-const metrics = [
-  { label: "Clientes para responder", value: "0", color: "var(--orange)" },
-  { label: "Projetos ativos", value: "0", color: "var(--violet)" },
-  { label: "Docs salvos", value: "0", color: "var(--cyan)" },
-  { label: "A receber", value: formatCurrencyCompact(6350), color: "#facc15" },
-];
+import { calculateMaturity, getClientName } from "@/lib/workspace-state";
+import { useWorkspaceState } from "@/hooks/use-workspace-state";
+import { formatCurrency, formatDate } from "@/lib/utils/format";
 
 const modules = [
   {
@@ -28,7 +26,7 @@ const modules = [
     icon: BriefcaseBusiness,
     label: "Comercial",
     title: "Clientes, parcerias e freelancers",
-    text: "Cadastro guiado e próxima ação clara.",
+    text: "Cadastro guiado, próxima ação e relacionamento em um lugar.",
     color: "var(--green)",
   },
   {
@@ -36,172 +34,224 @@ const modules = [
     icon: Clapperboard,
     label: "Produção",
     title: "Pipeline visual por projeto",
-    text: "Da venda à entrega sem perder contexto.",
+    text: "Briefing, roteiro, decupagem, callsheet, checklist e entrega.",
     color: "var(--violet)",
   },
   {
     href: "/studio",
     icon: FileText,
     label: "Studio Docs",
-    title: "Documentos profissionais",
-    text: "Campos únicos para cada tipo de documento.",
+    title: "Documentos do audiovisual",
+    text: "Cada documento tem campos próprios e histórico salvo.",
     color: "var(--cyan)",
   },
   {
     href: "/financeiro",
     icon: WalletCards,
     label: "Financeiro",
-    title: "Valores protegidos e legíveis",
-    text: "Cards responsivos e prontos para privacidade.",
+    title: "Operação em segundos",
+    text: "Receber, pagar, recebido e lucro previsto com privacidade.",
     color: "#facc15",
   },
 ];
 
 export function Dashboard() {
+  const { state, metrics } = useWorkspaceState();
+  const maturity = calculateMaturity(state);
+  const nextProjects = state.projects.slice(0, 3);
+  const nextClient = state.clients.find((client) => client.status === "lead") ?? state.clients[0];
+  const privacy = state.privacyMode;
+
   return (
-    <main className="app-bg px-4 py-5 text-zinc-100 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
-        <header className="flex flex-col gap-4 rounded-[30px] border border-white/10 bg-black/30 p-5 backdrop-blur-2xl md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="grid size-14 place-items-center rounded-2xl border border-orange-400/30 bg-orange-500/15 text-2xl font-black text-orange-400">
-              N
-            </div>
+    <AppShell
+      eyebrow="Visão atual"
+      primaryAction={{ href: "/clientes", label: "Novo cliente" }}
+      subtitle="Seu dia começa aqui: o que responder, o que produzir, o que receber e o que entregar."
+      title="Hoje"
+    >
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_420px]">
+        <Surface className="overflow-hidden">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.28em] text-orange-400">Studio OS</p>
-              <h1 className="text-2xl font-black leading-tight sm:text-4xl">NEXO Central</h1>
+              <Badge color="var(--blue)">Sistema operacional audiovisual</Badge>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-[0.95] sm:text-6xl">
+                Menos planilha, menos WhatsApp perdido, mais produção andando.
+              </h2>
             </div>
+            <Link
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-orange-400/30 bg-orange-500 px-5 text-sm font-black text-black transition hover:bg-orange-400"
+              href="/projetos"
+            >
+              Abrir produção
+              <ArrowRight size={18} />
+            </Link>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge>Next.js + TypeScript</Badge>
-            <Badge color="var(--green)">Base nova separada</Badge>
-          </div>
-        </header>
 
-        <section className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
-          <Surface className="overflow-hidden">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-2xl">
-                <Badge color="var(--blue)">Visão atual</Badge>
-                <h2 className="mt-4 text-4xl font-black leading-[0.95] sm:text-6xl">
-                  Operação clara, modular e pronta para escala.
-                </h2>
-                <p className="mt-4 max-w-xl text-base leading-7 text-zinc-400">
-                  Esta é a primeira fundação da migração: dashboard mais limpo, módulos separados, review profissional e
-                  Supabase preparado para evoluir por migrations.
-                </p>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: "Clientes para responder", value: metrics.clientsToAnswer, color: "var(--orange)" },
+              { label: "Projetos ativos", value: metrics.activeProjects, color: "var(--violet)" },
+              { label: "Docs salvos", value: metrics.savedDocs, color: "var(--cyan)" },
+              { label: "A receber", value: formatCurrency(metrics.receivable, privacy), color: "#facc15" },
+            ].map((metric) => (
+              <div key={metric.label} className="min-h-36 rounded-3xl border border-white/10 bg-white/[0.045] p-5">
+                <div className="h-2 w-8 rounded-full" style={{ background: metric.color }} />
+                <div
+                  className="mt-6 max-w-full break-words text-4xl font-black leading-none tracking-normal sm:text-5xl"
+                  style={{ color: metric.color }}
+                >
+                  {metric.value}
+                </div>
+                <p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">{metric.label}</p>
               </div>
-              <Link
-                className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-orange-400/30 bg-orange-500 px-5 text-sm font-black text-white transition hover:bg-orange-400"
-                href="/review/demo"
-              >
-                Testar review
-                <ArrowRight size={18} />
+            ))}
+          </div>
+        </Surface>
+
+        <Surface>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">Score de maturidade</p>
+              <h3 className="mt-2 text-3xl font-black">{maturity}% Studio OS</h3>
+            </div>
+            <Gauge className="text-emerald-300" size={38} />
+          </div>
+
+          <div className="mt-6 space-y-4">
+            {[
+              { label: "CRM com clientes", done: state.clients.length > 0, href: "/clientes" },
+              { label: "Projetos com pipeline", done: state.projects.length > 0, href: "/projetos" },
+              { label: "Documentos no histórico", done: state.documents.length > 0, href: "/studio" },
+              { label: "Financeiro previsível", done: state.financeEntries.length > 0, href: "/financeiro" },
+              { label: "Review profissional", done: true, href: "/review/demo" },
+            ].map((item) => (
+              <Link key={item.label} className="flex items-start justify-between gap-4 border-b border-white/10 pb-4 last:border-b-0" href={item.href}>
+                <div>
+                  <p className={`font-black ${item.done ? "text-emerald-300" : "text-zinc-200"}`}>{item.done ? "✓" : "○"} {item.label}</p>
+                  <p className="mt-1 text-sm text-zinc-500">{item.done ? "Pronto" : "Abrir e resolver em poucos cliques"}</p>
+                </div>
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-orange-300">{item.done ? "OK" : "Abrir"}</span>
+              </Link>
+            ))}
+          </div>
+        </Surface>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+        <Surface>
+          <div className="flex items-center gap-3">
+            <Sparkles className="text-orange-400" />
+            <h2 className="text-xl font-black">Próxima melhor ação</h2>
+          </div>
+
+          {nextClient ? (
+            <div className="mt-5 rounded-3xl border border-orange-400/20 bg-orange-500/10 p-5">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300">Comercial</p>
+              <h3 className="mt-3 text-2xl font-black">{nextClient.name}</h3>
+              <p className="mt-3 text-sm leading-6 text-zinc-300">{nextClient.nextAction}</p>
+              <Link className="mt-5 inline-flex items-center gap-2 text-sm font-black text-orange-300" href="/clientes">
+                Resolver agora
+                <ArrowRight size={16} />
               </Link>
             </div>
+          ) : null}
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {metrics.map((metric) => (
-                <div key={metric.label} className="min-h-36 rounded-3xl border border-white/10 bg-white/[0.045] p-5">
-                  <div className="h-2 w-8 rounded-full" style={{ background: metric.color }} />
-                  <div
-                    className="mt-6 max-w-full break-words text-4xl font-black leading-none tracking-normal sm:text-5xl"
-                    style={{ color: metric.color }}
-                  >
-                    {metric.value}
-                  </div>
-                  <p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">{metric.label}</p>
-                </div>
-              ))}
-            </div>
-          </Surface>
+          <div className="mt-4 grid gap-2">
+            {AUDIOVISUAL_PRESETS.slice(0, 4).map((preset) => (
+              <Link
+                key={preset.id}
+                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-sm transition hover:bg-white/[0.08]"
+                href="/projetos"
+              >
+                <span className="font-black">{preset.label}</span>
+                <span className="text-zinc-500">{formatCurrency(preset.value, privacy)}</span>
+              </Link>
+            ))}
+          </div>
+        </Surface>
 
-          <Surface>
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">Score de maturidade</p>
-                <h3 className="mt-2 text-2xl font-black">83% Studio OS</h3>
-              </div>
-              <Gauge className="text-emerald-300" size={34} />
+        <Surface>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Clapperboard className="text-violet-300" />
+              <h2 className="text-xl font-black">Produção em andamento</h2>
             </div>
-            <div className="mt-6 space-y-4">
-              {["CRM com clientes", "Propostas no histórico", "Produção mapeada", "Financeiro previsível", "Negócio configurado"].map(
-                (item, index) => (
-                  <div key={item} className="flex items-start justify-between gap-4 border-b border-white/10 pb-4 last:border-b-0">
+            <Link href="/review/demo" className="inline-flex items-center gap-2 text-sm font-black text-cyan-300">
+              <MessageSquareReply size={17} />
+              Review
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-3">
+            {nextProjects.map((project) => {
+              const done = PRODUCTION_PIPELINE.filter((step) => project.pipeline[step.key]).length;
+              const percent = Math.round((done / PRODUCTION_PIPELINE.length) * 100);
+
+              return (
+                <Link key={project.id} className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.08]" href="/projetos">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className={`font-black ${index === 1 ? "text-zinc-200" : "text-emerald-300"}`}>
-                        {index === 1 ? "○" : "✓"} {item}
-                      </p>
-                      <p className="mt-1 text-sm text-zinc-500">{index === 1 ? "Crie uma proposta vinculada ao cliente" : "Pronto"}</p>
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">{getClientName(state, project.clientId)}</p>
+                      <h3 className="mt-2 text-xl font-black">{project.title}</h3>
                     </div>
-                    <span className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
-                      {index === 1 ? "Abrir" : "OK"}
-                    </span>
+                    <Badge color="var(--violet)">{formatDate(project.deadline)}</Badge>
                   </div>
-                ),
-              )}
-            </div>
-          </Surface>
-        </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {modules.map((module) => {
-            const Icon = module.icon;
-            return (
-              <Link
-                key={module.href}
-                className="group soft-panel min-h-64 rounded-[26px] p-6 transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.07]"
-                href={module.href}
-              >
-                <div className="flex items-center justify-between">
-                  <Icon size={24} style={{ color: module.color }} />
-                  <PanelRightOpen className="text-zinc-600 transition group-hover:text-zinc-200" size={20} />
-                </div>
-                <p className="mt-8 text-xs font-black uppercase tracking-[0.2em] text-zinc-500">{module.label}</p>
-                <h3 className="mt-3 text-2xl font-black leading-tight">{module.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-zinc-400">{module.text}</p>
-              </Link>
-            );
-          })}
-        </section>
-
-        <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-          <Surface>
-            <div className="flex items-center gap-3">
-              <Sparkles className="text-orange-400" />
-              <h2 className="text-xl font-black">Presets audiovisuais</h2>
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {AUDIOVISUAL_PRESETS.slice(0, 6).map((preset) => (
-                <div key={preset.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-black">{preset.label}</h3>
-                    <span className="whitespace-nowrap text-sm font-black text-orange-300">{formatCurrencyCompact(preset.value)}</span>
+                  <div className="mt-4 h-2 rounded-full bg-white/10">
+                    <div className="h-2 rounded-full bg-violet-400" style={{ width: `${percent}%` }} />
                   </div>
-                  <p className="mt-2 text-sm text-zinc-500">{preset.type}</p>
-                </div>
-              ))}
-            </div>
-          </Surface>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {PRODUCTION_PIPELINE.map((step) => (
+                      <span
+                        key={step.key}
+                        className={`rounded-full px-2 py-1 text-[11px] font-black ${project.pipeline[step.key] ? "bg-emerald-400/15 text-emerald-300" : "bg-white/[0.06] text-zinc-500"}`}
+                      >
+                        {step.label}
+                      </span>
+                    ))}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </Surface>
+      </section>
 
-          <Surface>
-            <div className="flex items-center gap-3">
-              <BadgeCheck className="text-emerald-300" />
-              <h2 className="text-xl font-black">Pipeline padrão</h2>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {modules.map((module) => {
+          const Icon = module.icon;
+          return (
+            <Link
+              key={module.href}
+              className="group soft-panel min-h-60 rounded-[26px] p-6 transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.07]"
+              href={module.href}
+            >
+              <Icon size={24} style={{ color: module.color }} />
+              <p className="mt-8 text-xs font-black uppercase tracking-[0.2em] text-zinc-500">{module.label}</p>
+              <h3 className="mt-3 text-2xl font-black leading-tight">{module.title}</h3>
+              <p className="mt-3 text-sm leading-6 text-zinc-400">{module.text}</p>
+            </Link>
+          );
+        })}
+      </section>
+
+      <Surface>
+        <div className="flex items-center gap-3">
+          <BadgeCheck className="text-emerald-300" />
+          <h2 className="text-xl font-black">Pipeline padrão</h2>
+        </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+          {PRODUCTION_PIPELINE.map((step, index) => (
+            <div key={step.key} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <span className="text-xs font-black uppercase tracking-[0.2em]" style={{ color: step.color }}>
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <h3 className="mt-3 font-black">{step.label}</h3>
+              <p className="mt-2 text-sm text-zinc-500">{step.docType}</p>
             </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {PRODUCTION_PIPELINE.map((step, index) => (
-                <div key={step.key} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <span className="text-xs font-black uppercase tracking-[0.2em]" style={{ color: step.color }}>
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="mt-3 font-black">{step.label}</h3>
-                  <p className="mt-2 text-sm text-zinc-500">Documento: {step.docType}</p>
-                </div>
-              ))}
-            </div>
-          </Surface>
-        </section>
-      </div>
-    </main>
+          ))}
+        </div>
+      </Surface>
+    </AppShell>
   );
 }

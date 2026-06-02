@@ -8,7 +8,7 @@ type BadgeProps = PropsWithChildren<{
 export function Badge({ children, color = "var(--orange)", className = "" }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] ${className}`}
       style={{
         borderColor: `${color}55`,
         background: `${color}18`,
