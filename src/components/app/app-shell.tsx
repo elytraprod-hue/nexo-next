@@ -187,20 +187,20 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
         </div>
       ) : null}
 
-      <div className="mx-auto flex min-h-screen w-full max-w-[1480px] gap-4 px-3 py-3 sm:px-4 lg:px-5">
-        <aside className="hidden w-[248px] shrink-0 flex-col gap-4 rounded-[28px] border border-white/10 bg-black/40 p-3 shadow-2xl backdrop-blur-2xl md:flex">
-          <Link href="/dashboard" className="flex items-center gap-3 rounded-[22px] border border-orange-400/20 bg-orange-500/10 p-3">
-            <div className="grid size-12 place-items-center rounded-[16px] border border-orange-400/40 bg-orange-500 text-2xl font-black text-black shadow-[0_0_34px_rgba(255,106,0,0.35)]">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1360px] gap-4 px-3 py-3 sm:px-4 lg:px-5">
+        <aside className="hidden w-[236px] shrink-0 flex-col gap-3 rounded-2xl border border-white/10 bg-black/38 p-3 shadow-2xl backdrop-blur-2xl md:flex">
+          <Link href="/dashboard" className="flex items-center gap-3 rounded-xl border border-orange-400/20 bg-orange-500/10 p-3">
+            <div className="grid size-11 place-items-center rounded-xl border border-orange-400/40 bg-orange-500 text-xl font-black text-black shadow-[0_0_28px_rgba(255,106,0,0.25)]">
               {state.businessProfile.name.slice(0, 1) || "N"}
             </div>
             <div className="min-w-0">
-              <p className="display-font text-2xl font-black leading-none">NEXO</p>
-              <p className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.18em] text-orange-400">{state.businessProfile.name} OS</p>
+              <p className="display-font text-xl font-black leading-none">NEXO</p>
+              <p className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.16em] text-orange-400">{state.businessProfile.name} OS</p>
             </div>
           </Link>
 
-          <div className="rounded-[22px] border border-white/10 bg-white/[0.045] p-3">
-            <p className="px-2 text-[11px] font-black uppercase tracking-[0.22em] text-zinc-500">Acesso rápido</p>
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-2">
+            <p className="px-2 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Acesso rápido</p>
             <nav className="mt-3 grid gap-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
@@ -211,7 +211,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex min-h-11 items-center gap-3 rounded-2xl px-3 text-sm font-black transition",
+                      "flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-black transition",
                       active
                         ? "os-left-accent border border-orange-400/30 bg-orange-500/15 text-orange-300 shadow-[0_12px_30px_rgba(255,106,0,0.12)]"
                         : "border border-transparent text-zinc-400 hover:border-white/10 hover:bg-white/[0.07] hover:text-white",
@@ -228,47 +228,46 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
           {primaryAction ? (
             <Link
               href={primaryAction.href}
-              className="flex min-h-12 items-center justify-center gap-2 rounded-[18px] bg-orange-500 px-4 text-sm font-black text-black transition hover:bg-orange-400"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-black text-black transition hover:bg-orange-400"
             >
               <Plus size={18} />
               {primaryAction.label}
             </Link>
           ) : null}
 
-          <div className="rounded-[22px] border border-white/10 bg-white/[0.035] p-3">
-            <div className="flex items-center justify-between gap-2 text-xs font-black text-zinc-500">
-              <span>Modo</span>
-              <span className="text-orange-300">Operação</span>
+          <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Status</p>
+            <div className="mt-3 flex items-center justify-between gap-3 text-xs font-black">
+              <span className="text-zinc-400">Workspace</span>
+              <span className={syncStatus === "cloud" ? "text-emerald-300" : "text-orange-300"}>
+                {syncStatus === "cloud" ? "Cloud OK" : "Local"}
+              </span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button className="rounded-2xl border border-orange-400/30 bg-orange-500/15 px-3 py-2 text-xs font-black text-orange-300" type="button">
-                Simples
-              </button>
-              <button className="rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-black text-zinc-500" type="button">
-                Completo
-              </button>
-            </div>
+            <button className="mt-3 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] text-xs font-black text-zinc-300" type="button" onClick={actions.togglePrivacy}>
+              {state.privacyMode ? <EyeOff size={15} /> : <Eye size={15} />}
+              {state.privacyMode ? "Valores ocultos" : "Valores visíveis"}
+            </button>
           </div>
 
-          <div className="mt-auto rounded-[22px] border border-cyan-300/20 bg-cyan-300/10 p-4">
-            <Sparkles className="text-cyan-300" size={22} />
-            <p className="mt-4 text-sm font-black">Regra do produto</p>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">Menos cliques, menos digitação, mais operação audiovisual pronta.</p>
+          <div className="mt-auto rounded-xl border border-cyan-300/15 bg-cyan-300/8 p-3">
+            <Sparkles className="text-cyan-300" size={18} />
+            <p className="mt-3 text-sm font-black">Regra do produto</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-400">Menos cliques, menos digitação, mais operação pronta.</p>
           </div>
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col gap-4">
-          <header className="sticky top-3 z-30 rounded-[24px] border border-white/10 bg-black/50 p-3 shadow-2xl backdrop-blur-2xl">
+          <header className="sticky top-3 z-30 rounded-2xl border border-white/10 bg-black/50 p-3 shadow-2xl backdrop-blur-2xl">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">
-                <p className="text-[11px] font-black uppercase tracking-[0.28em] text-orange-400">{eyebrow}</p>
-                <h1 className="mt-1 text-2xl font-black leading-tight sm:text-4xl">{title}</h1>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-400">{eyebrow}</p>
+                <h1 className="mt-1 text-xl font-black leading-tight sm:text-3xl">{title}</h1>
                 {subtitle ? <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-400">{subtitle}</p> : null}
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  className="hidden min-h-11 min-w-[260px] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 text-left text-sm font-bold text-zinc-500 transition hover:text-zinc-300 xl:flex"
+                  className="hidden min-h-10 min-w-[240px] items-center gap-2 rounded-lg border border-white/10 bg-white/[0.055] px-3 text-left text-sm font-bold text-zinc-500 transition hover:text-zinc-300 xl:flex"
                   type="button"
                   onClick={() => setCommandOpen(true)}
                 >
@@ -290,7 +289,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-2xl px-3 text-xs font-black transition",
+                      "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition",
                       active ? "bg-orange-500 text-black" : "bg-white/[0.055] text-zinc-400",
                     )}
                   >
@@ -303,23 +302,23 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
           </header>
 
           {intel.length && !intelHidden ? (
-            <section className="notification-slide flex flex-col gap-2 rounded-[24px] border border-orange-400/20 bg-orange-500/10 p-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+            <section className="notification-slide flex flex-col gap-2 rounded-2xl border border-orange-400/20 bg-orange-500/10 p-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
-                <span className="grid size-10 place-items-center rounded-2xl bg-orange-500/15 text-orange-300">
+                <span className="grid size-9 place-items-center rounded-lg bg-orange-500/15 text-orange-300">
                   <Bell size={17} />
                 </span>
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">Contexto ativo</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300">Contexto ativo</p>
                   <p className="mt-1 text-sm font-bold text-zinc-300">{intel[0].label}</p>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {intel.slice(0, 3).map((item) => (
-                  <Link key={item.id} className="rounded-2xl border px-3 py-2 text-xs font-black" href={item.href} style={{ borderColor: `${item.color}44`, color: item.color }}>
+                  <Link key={item.id} className="rounded-lg border px-3 py-2 text-xs font-black" href={item.href} style={{ borderColor: `${item.color}44`, color: item.color }}>
                     {item.label}
                   </Link>
                 ))}
-                <button className="grid size-9 place-items-center rounded-2xl border border-white/10 text-zinc-500" type="button" onClick={() => setIntelHidden(true)} aria-label="Fechar contexto">
+                <button className="grid size-9 place-items-center rounded-lg border border-white/10 text-zinc-500" type="button" onClick={() => setIntelHidden(true)} aria-label="Fechar contexto">
                   <X size={16} />
                 </button>
               </div>
@@ -352,14 +351,6 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </button>
           )}
 
-          <div className="floating-actions" aria-label="Ações principais">
-            <button className="float-action" type="button" onClick={() => setCommandOpen(true)}>
-              <Plus size={15} />
-              Criar
-            </button>
-            <Link href="/studio" className="float-action secondary">PDF</Link>
-            <Link href="/review/demo" className="float-action secondary">Review</Link>
-          </div>
           <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
         </section>
       </div>

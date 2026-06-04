@@ -133,18 +133,18 @@ export function Dashboard() {
       subtitle="O que precisa de decisão agora, sem transformar a abertura do sistema em painel administrativo."
       title="Hoje"
     >
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Surface className="overflow-hidden">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <Badge color={syncStatus === "cloud" ? "var(--green)" : "var(--orange)"}>
                 {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
               </Badge>
-              <h2 className="mt-4 max-w-3xl text-4xl font-black leading-[0.95] sm:text-5xl">Bom trabalho, {displayName}.</h2>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400">&ldquo;{quote}&rdquo;</p>
+              <h2 className="mt-3 max-w-3xl text-3xl font-black leading-tight sm:text-4xl">Bom trabalho, {displayName}.</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">&ldquo;{quote}&rdquo;</p>
             </div>
             <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-4 text-sm font-black text-zinc-300 transition hover:text-white"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.055] px-4 text-sm font-black text-zinc-300 transition hover:text-white"
               type="button"
               onClick={actions.togglePrivacy}
             >
@@ -153,15 +153,15 @@ export function Dashboard() {
             </button>
           </div>
 
-          <div className="mt-7 rounded-[26px] border border-orange-400/25 bg-orange-500/10 p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="mt-5 rounded-2xl border border-orange-400/25 bg-orange-500/10 p-4 sm:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em]" style={{ color: primaryAction.color }}>O que fazer agora</p>
-                <h3 className="mt-3 text-3xl font-black leading-tight">{primaryAction.title}</h3>
+                <h3 className="mt-2 text-2xl font-black leading-tight">{primaryAction.title}</h3>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">{primaryAction.text}</p>
               </div>
               <Link
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-black transition hover:bg-orange-400"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-orange-500 px-5 text-sm font-black text-black transition hover:bg-orange-400"
                 href={primaryAction.href}
               >
                 {primaryAction.label}
@@ -170,12 +170,12 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {compactMetrics.map((metric) => (
-              <Link key={metric.label} className="min-h-32 rounded-3xl border border-white/10 bg-white/[0.045] p-4 transition hover:bg-white/[0.075]" href={metric.href}>
-                <div className="h-2 w-8 rounded-full" style={{ background: metric.color }} />
+              <Link key={metric.label} className="min-h-28 rounded-xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.075]" href={metric.href}>
+                <div className="h-1.5 w-7 rounded-full" style={{ background: metric.color }} />
                 <div
-                  className={`mt-5 max-w-full break-words font-black leading-none tracking-normal ${metric.money ? "text-[clamp(1.65rem,3vw,2.35rem)]" : "text-4xl"}`}
+                  className={`mt-4 max-w-full break-words font-black leading-none tracking-normal ${metric.money ? "text-[clamp(1.35rem,2.2vw,1.85rem)]" : "text-3xl"}`}
                   style={{ color: metric.color }}
                 >
                   {metric.value}
@@ -189,13 +189,13 @@ export function Dashboard() {
         <Surface>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">Score de maturidade</p>
-              <h3 className="mt-2 text-3xl font-black">{maturity}% Studio OS</h3>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Score de maturidade</p>
+              <h3 className="mt-2 text-2xl font-black">{maturity}% Studio OS</h3>
             </div>
-            <Gauge className="text-emerald-300" size={38} />
+            <Gauge className="text-emerald-300" size={32} />
           </div>
 
-          <div className="mt-6 space-y-4">
+          <div className="mt-5 space-y-3">
             {[
               { label: "CRM com clientes", done: state.clients.length > 0, href: "/clientes" },
               { label: "Projetos com pipeline", done: state.projects.length > 0, href: "/projetos" },
@@ -203,9 +203,9 @@ export function Dashboard() {
               { label: "Financeiro previsível", done: state.financeEntries.length > 0, href: "/financeiro" },
               { label: "Review profissional", done: true, href: "/review/demo" },
             ].map((item) => (
-              <Link key={item.label} className="flex items-start justify-between gap-4 border-b border-white/10 pb-4 last:border-b-0" href={item.href}>
+              <Link key={item.label} className="flex items-start justify-between gap-4 border-b border-white/10 pb-3 last:border-b-0" href={item.href}>
                 <div>
-                  <p className={`font-black ${item.done ? "text-emerald-300" : "text-zinc-200"}`}>{item.done ? "✓" : "○"} {item.label}</p>
+                  <p className={`text-sm font-black ${item.done ? "text-emerald-300" : "text-zinc-200"}`}>{item.done ? "✓" : "○"} {item.label}</p>
                   <p className="mt-1 text-sm text-zinc-500">{item.done ? "Pronto" : "Resolver em poucos cliques"}</p>
                 </div>
                 <span className="text-xs font-black uppercase tracking-[0.16em] text-orange-300">{item.done ? "OK" : "Abrir"}</span>
@@ -215,7 +215,7 @@ export function Dashboard() {
         </Surface>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[390px_minmax(0,1fr)]">
+      <section className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
         <Surface>
           <div className="flex items-center gap-3">
             <Sparkles className="text-orange-400" />
@@ -223,9 +223,9 @@ export function Dashboard() {
           </div>
 
           {nextClient ? (
-            <div className="mt-5 rounded-3xl border border-orange-400/20 bg-orange-500/10 p-5">
+            <div className="mt-5 rounded-xl border border-orange-400/20 bg-orange-500/10 p-4">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300">Comercial</p>
-              <h3 className="mt-3 text-2xl font-black">{nextClient.name}</h3>
+              <h3 className="mt-2 text-xl font-black">{nextClient.name}</h3>
               <p className="mt-3 text-sm leading-6 text-zinc-300">{nextClient.nextAction}</p>
               <Link className="mt-5 inline-flex items-center gap-2 text-sm font-black text-orange-300" href="/clientes">
                 Resolver agora
@@ -238,7 +238,7 @@ export function Dashboard() {
             {AUDIOVISUAL_PRESETS.slice(0, 4).map((preset) => (
               <Link
                 key={preset.id}
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-sm transition hover:bg-white/[0.08]"
+                className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] p-3 text-sm transition hover:bg-white/[0.08]"
                 href="/projetos"
               >
                 <span className="font-black">{preset.label}</span>
@@ -266,7 +266,7 @@ export function Dashboard() {
               const percent = Math.round((done / PRODUCTION_PIPELINE.length) * 100);
 
               return (
-                <Link key={project.id} className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.08]" href="/projetos">
+                <Link key={project.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.08]" href="/projetos">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">{getClientName(state, project.clientId)}</p>
@@ -321,12 +321,12 @@ export function Dashboard() {
               return (
                 <Link
                   key={module.href}
-                  className="group soft-panel min-h-60 rounded-[26px] p-6 transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.07]"
+                  className="group soft-panel min-h-52 rounded-xl p-5 transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.07]"
                   href={module.href}
                 >
                   <Icon size={24} style={{ color: module.color }} />
-                  <p className="mt-8 text-xs font-black uppercase tracking-[0.2em] text-zinc-500">{module.label}</p>
-                  <h3 className="mt-3 text-2xl font-black leading-tight">{module.title}</h3>
+                  <p className="mt-6 text-xs font-black uppercase tracking-[0.2em] text-zinc-500">{module.label}</p>
+                  <h3 className="mt-3 text-xl font-black leading-tight">{module.title}</h3>
                   <p className="mt-3 text-sm leading-6 text-zinc-400">{module.text}</p>
                 </Link>
               );

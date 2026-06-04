@@ -21,6 +21,7 @@ Nova base do NEXO Central em Next.js + TypeScript, criada em repositório separa
 - `src/types`: tipos de domínio
 - `supabase/migrations`: migrations do banco
 - `docs/product-principles.md`: princípios de decisão do produto
+- `docs/deploy-runbook.md`: rotina segura de verificação, banco e deploy
 
 ## Rodar localmente
 
@@ -46,7 +47,7 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 Depois aplique a migration:
 
 ```bash
-supabase db push
+npm run db:push
 ```
 
 ## Review de vídeo
@@ -73,13 +74,34 @@ Também há compatibilidade inicial com links antigos do tipo:
 
 Esse link redireciona para `/review/TOKEN`.
 
-Para upload real, aplique também a migration `20260602_review_storage_upload.sql`, que cria o bucket `review-videos` e limita upload/edição aos membros do workspace.
+Para upload real, aplique as migrations de storage e segurança pública do Review. A migration `20260604_review_storage_upload.sql` cria o bucket `review-videos` e limita upload/edição aos membros do workspace, enquanto as RPCs públicas usam token em vez de abrir tabelas diretamente para `anon`.
+
+## Qualidade e deploy
+
+Antes de subir:
+
+```bash
+npm run verify
+```
+
+Deploy completo:
+
+```bash
+npm run deploy:prod
+```
+
+Runbook detalhado:
+
+```bash
+docs/deploy-runbook.md
+```
 
 ## Deploy
 
 ```bash
 npm run lint
 npm run typecheck
+npm run test:smoke
 npm run build
 npx vercel --prod
 ```

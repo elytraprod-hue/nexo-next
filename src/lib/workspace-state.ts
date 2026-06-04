@@ -80,6 +80,7 @@ export type StudioDocumentRecord = {
   presetId: string;
   payload: Record<string, string>;
   summary: string;
+  html?: string;
   createdAt: string;
 };
 

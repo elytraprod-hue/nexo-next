@@ -1,0 +1,49 @@
+import { existsSync, readFileSync } from "node:fs";
+
+const requiredFiles = [
+  "src/app/dashboard/page.tsx",
+  "src/app/clientes/page.tsx",
+  "src/app/projetos/page.tsx",
+  "src/app/studio/page.tsx",
+  "src/app/studio/documentos/[documentId]/page.tsx",
+  "src/app/review/page.tsx",
+  "src/app/review/[token]/page.tsx",
+  "src/app/auth/callback/page.tsx",
+  "src/app/admin/page.tsx",
+  "supabase/migrations/20260602_initial_next_foundation.sql",
+  "supabase/migrations/20260603_real_roles_rls.sql",
+  "supabase/migrations/20260604_review_storage_upload.sql",
+  "supabase/migrations/20260605_review_public_rpc_security.sql",
+  "supabase/migrations/20260606_workspace_member_status.sql",
+];
+
+const requiredContents = [
+  ["src/app/review/page.tsx", "ProtectedRoute"],
+  ["src/services/review-service.ts", "get_public_review"],
+  ["src/services/review-service.ts", "add_public_review_comment"],
+  ["src/services/review-service.ts", "set_public_review_status"],
+  ["src/features/admin/admin-page.tsx", "workspaceMembers"],
+  ["src/lib/auth/roles.ts", "canAccessInternal"],
+  ["supabase/migrations/20260602_initial_next_foundation.sql", "encode(gen_random_bytes(32), 'hex')"],
+  ["supabase/migrations/20260605_review_public_rpc_security.sql", "revoke select on public.deliverables from anon"],
+];
+
+const failures = [];
+
+for (const file of requiredFiles) {
+  if (!existsSync(file)) failures.push(`Arquivo obrigatório ausente: ${file}`);
+}
+
+for (const [file, content] of requiredContents) {
+  if (!existsSync(file)) continue;
+  const source = readFileSync(file, "utf8");
+  if (!source.includes(content)) failures.push(`Conteúdo esperado não encontrado em ${file}: ${content}`);
+}
+
+if (failures.length) {
+  console.error("Smoke check falhou:");
+  for (const failure of failures) console.error(`- ${failure}`);
+  process.exit(1);
+}
+
+console.log("Smoke check OK: rotas, migrations e segurança base presentes.");

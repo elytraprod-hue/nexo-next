@@ -1,5 +1,10 @@
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import { ClientsPage } from "@/features/clients/clients-page";
 
 export default function ClientesPage() {
-  return <ClientsPage />;
+  return (
+    <ProtectedRoute>
+      <ClientsPage />
+    </ProtectedRoute>
+  );
 }

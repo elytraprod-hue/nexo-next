@@ -110,7 +110,7 @@ export function ProjectsPage() {
     const expanded = expandedProjectId === project.id;
 
     return (
-      <article key={project.id} className={`rounded-[28px] border border-white/10 bg-black/20 ${compact ? "p-4" : "p-5"}`}>
+      <article key={project.id} className={`rounded-xl border border-white/10 bg-black/20 ${compact ? "p-3" : "p-4"}`}>
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap gap-2">
@@ -123,17 +123,17 @@ export function ProjectsPage() {
                 {done}/{PRODUCTION_PIPELINE.length} etapas
               </Badge>
             </div>
-            <h3 className="mt-4 break-words text-2xl font-black">{project.title}</h3>
+            <h3 className="mt-3 break-words text-xl font-black">{project.title}</h3>
             <p className="mt-1 text-sm text-zinc-500">{getClientName(state, project.clientId)}</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Orçamento</p>
-              <p className="mt-1 max-w-40 truncate text-xl font-black text-emerald-300">{formatCurrency(project.budget, state.privacyMode)}</p>
+              <p className="mt-1 max-w-36 truncate text-lg font-black text-emerald-300">{formatCurrency(project.budget, state.privacyMode)}</p>
             </div>
             <button
               aria-label={`Excluir ${project.title}`}
-              className="grid size-11 shrink-0 place-items-center rounded-2xl border border-red-400/20 bg-red-400/10 text-red-300 transition hover:bg-red-400/20"
+              className="grid size-10 shrink-0 place-items-center rounded-lg border border-red-400/20 bg-red-400/10 text-red-300 transition hover:bg-red-400/20"
               type="button"
               onClick={() => actions.removeProject(project.id)}
             >
@@ -156,7 +156,7 @@ export function ProjectsPage() {
           {PRODUCTION_PIPELINE.map((step) => (
             <button
               key={step.key}
-              className={`focus-ring rounded-2xl border px-3 py-3 text-left text-xs font-black transition ${
+              className={`focus-ring rounded-lg border px-3 py-3 text-left text-xs font-black transition ${
                 project.pipeline[step.key] ? "border-emerald-300/30 bg-emerald-300/15 text-emerald-300" : "border-white/10 bg-white/[0.04] text-zinc-500"
               }`}
               type="button"
@@ -191,7 +191,7 @@ export function ProjectsPage() {
             {project.checklist.map((item, index) => (
               <button
                 key={`${project.id}-${item.text}`}
-                className={`focus-ring flex items-center gap-3 rounded-2xl border p-3 text-left text-sm transition ${
+                className={`focus-ring flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition ${
                   item.done ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200" : "border-white/10 bg-white/[0.035] text-zinc-400"
                 }`}
                 type="button"
@@ -215,7 +215,7 @@ export function ProjectsPage() {
       subtitle="Um projeto nasce com pipeline, entregáveis, briefing base e checklist. Nada de começar do zero."
       title="Produção"
     >
-      <section className="grid gap-4 xl:grid-cols-[430px_minmax(0,1fr)]">
+      <section className="grid gap-4 xl:grid-cols-[400px_minmax(0,1fr)]">
         <div className="grid gap-4">
           <Surface>
             <div className="flex items-center gap-3">
@@ -226,7 +226,7 @@ export function ProjectsPage() {
 
             <div className="mt-5 grid gap-3">
               <select
-                className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm font-bold text-white"
+                className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold text-white"
                 value={clientId}
                 onChange={(event) => setClientId(event.target.value)}
               >
@@ -238,7 +238,7 @@ export function ProjectsPage() {
               </select>
 
               <input
-                className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
                 placeholder={selectedPreset.title}
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
@@ -248,7 +248,7 @@ export function ProjectsPage() {
                 {AUDIOVISUAL_PRESETS.map((preset) => (
                   <button
                     key={preset.id}
-                    className={`focus-ring rounded-2xl border p-3 text-left transition ${
+                    className={`focus-ring rounded-lg border p-3 text-left transition ${
                       presetId === preset.id ? "border-violet-300 bg-violet-300/10" : "border-white/10 bg-white/[0.04]"
                     }`}
                     type="button"
@@ -272,7 +272,7 @@ export function ProjectsPage() {
                 ].map((option) => (
                   <button
                     key={option.days}
-                    className="focus-ring rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-xs font-black text-zinc-300 transition hover:border-violet-300/30 hover:text-white"
+                    className="focus-ring rounded-lg border border-white/10 bg-white/[0.04] px-3 py-3 text-xs font-black text-zinc-300 transition hover:border-violet-300/30 hover:text-white"
                     type="button"
                     onClick={() => setDeadline(addDaysInput(option.days))}
                   >
@@ -284,7 +284,7 @@ export function ProjectsPage() {
               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                 Entrega prevista
                 <input
-                  className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                  className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
                   type="date"
                   value={deadline}
                   onChange={(event) => setDeadline(event.target.value)}
@@ -300,11 +300,11 @@ export function ProjectsPage() {
 
           <Surface>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Preset selecionado</p>
-            <h3 className="mt-3 text-2xl font-black">{selectedPreset.title}</h3>
+            <h3 className="mt-3 text-xl font-black">{selectedPreset.title}</h3>
             <p className="mt-3 text-sm leading-6 text-zinc-400">{selectedPreset.defaultBriefing.objective}</p>
             <div className="mt-4 grid gap-2">
               {selectedPreset.deliverables.map((deliverable) => (
-                <div key={deliverable} className="flex items-center gap-2 rounded-2xl bg-white/[0.045] p-3 text-sm text-zinc-300">
+                <div key={deliverable} className="flex items-center gap-2 rounded-lg bg-white/[0.045] p-3 text-sm text-zinc-300">
                   <CheckCircle2 className="text-emerald-300" size={17} />
                   {deliverable}
                 </div>
@@ -318,11 +318,11 @@ export function ProjectsPage() {
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Pipeline</p>
-                <h2 className="mt-2 text-3xl font-black">{state.projects.length} projetos</h2>
+                <h2 className="mt-2 text-2xl font-black">{state.projects.length} projetos</h2>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs font-black sm:grid-cols-4">
                 {statusColumns.map((status) => (
-                  <div key={status.key} className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                  <div key={status.key} className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
                     <span className="text-zinc-500">{status.label}</span>
                     <span className="ml-2 text-white">{projectsByStatus[status.key].length}</span>
                   </div>
@@ -331,7 +331,7 @@ export function ProjectsPage() {
             </div>
 
             {stagePrompt || lastDocumentTitle ? (
-              <div className="mt-5 rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.06] p-4">
+              <div className="mt-5 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.06] p-4">
                 {stagePrompt ? (
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -367,7 +367,7 @@ export function ProjectsPage() {
             ) : (
               <div className="mt-6 grid gap-4 xl:grid-cols-4">
                 {statusColumns.map((status) => (
-                  <div key={status.key} className="min-w-0 rounded-3xl border border-white/10 bg-white/[0.035] p-3">
+                  <div key={status.key} className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] p-3">
                     <div className="mb-3 flex items-center justify-between px-2">
                       <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">{status.label}</p>
                       <span className="ml-2 text-white">{projectsByStatus[status.key].length}</span>

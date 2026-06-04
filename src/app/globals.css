@@ -6,18 +6,18 @@
   --background: #080808;
   --foreground: #f4f4f5;
   --muted: #a1a1aa;
-  --panel: rgba(255, 255, 255, 0.055);
-  --panel-strong: rgba(255, 255, 255, 0.09);
-  --border: rgba(255, 255, 255, 0.12);
+  --panel: rgba(255, 255, 255, 0.045);
+  --panel-strong: rgba(255, 255, 255, 0.075);
+  --border: rgba(255, 255, 255, 0.1);
   --orange: #ff6a00;
   --green: #17d18b;
   --blue: #3b82f6;
   --violet: #8b5cf6;
   --cyan: #22d3ee;
-  --glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.082), rgba(255, 255, 255, 0.028));
-  --glass-border: rgba(255, 255, 255, 0.105);
-  --glass-shadow: 0 24px 90px rgba(0, 0, 0, 0.36);
-  --glass-blur: blur(22px) saturate(1.32);
+  --glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.062), rgba(255, 255, 255, 0.024));
+  --glass-border: rgba(255, 255, 255, 0.092);
+  --glass-shadow: 0 18px 60px rgba(0, 0, 0, 0.3);
+  --glass-blur: blur(18px) saturate(1.18);
 }
 
 * {
@@ -28,6 +28,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-dm-sans), Arial, Helvetica, sans-serif;
+  text-rendering: geometricPrecision;
 }
 
 h1,
@@ -45,15 +46,13 @@ h3,
 .app-bg {
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0) 42%),
-    radial-gradient(circle at 12% 10%, rgba(249, 115, 22, 0.15), transparent 28rem),
-    radial-gradient(circle at 82% 16%, rgba(59, 130, 246, 0.09), transparent 28rem),
-    linear-gradient(145deg, #090909 0%, #101010 44%, #0b0b0b 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.024), rgba(255, 255, 255, 0) 36%),
+    linear-gradient(145deg, #090909 0%, #101010 48%, #0b0b0b 100%);
 }
 
 .glass-panel {
   border: 1px solid var(--glass-border);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.072), rgba(255, 255, 255, 0.026) 52%, rgba(255, 255, 255, 0.038));
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.058), rgba(255, 255, 255, 0.022) 56%, rgba(255, 255, 255, 0.032));
   box-shadow: var(--glass-shadow);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -224,7 +223,7 @@ h3,
   right: 18px;
   bottom: 18px;
   padding: 8px;
-  border-radius: 22px;
+  border-radius: 18px;
 }
 
 .floating-actions {
@@ -243,7 +242,7 @@ h3,
   width: 52px;
   height: 52px;
   place-items: center;
-  border-radius: 18px;
+  border-radius: 16px;
   border: 1px solid rgba(255, 106, 0, 0.36);
   background: rgba(14, 14, 14, 0.78);
   color: var(--orange);
@@ -256,7 +255,7 @@ h3,
   width: 40px;
   height: 40px;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
   color: #b8b8b8;

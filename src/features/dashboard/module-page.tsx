@@ -23,16 +23,16 @@ export function ModulePage({ accent, eyebrow, title, description, actions, check
 
         <Surface>
           <Badge color={accent}>{eyebrow}</Badge>
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-end">
             <div>
-              <h1 className="max-w-3xl text-4xl font-black leading-[0.98] sm:text-6xl">{title}</h1>
+              <h1 className="max-w-3xl text-3xl font-black leading-tight sm:text-4xl">{title}</h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-400">{description}</p>
             </div>
             <div className="grid gap-3">
               {actions.map((action) => (
                 <button
                   key={action}
-                  className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-white/[0.06] px-4 text-left text-sm font-black text-zinc-100 transition hover:bg-white/[0.1]"
+                  className="focus-ring min-h-11 rounded-lg border border-white/10 bg-white/[0.06] px-4 text-left text-sm font-black text-zinc-100 transition hover:bg-white/[0.1]"
                   type="button"
                 >
                   {action}
@@ -44,7 +44,7 @@ export function ModulePage({ accent, eyebrow, title, description, actions, check
 
         <section className="grid gap-4 md:grid-cols-2">
           {checklist.map((item) => (
-            <div key={item} className="soft-panel flex min-h-28 items-start gap-4 rounded-3xl p-5">
+            <div key={item} className="soft-panel flex min-h-24 items-start gap-4 rounded-xl p-4">
               <CheckCircle2 className="mt-1 shrink-0" style={{ color: accent }} />
               <p className="text-sm leading-6 text-zinc-300">{item}</p>
             </div>

@@ -11,23 +11,24 @@ O NEXO nao deve parecer painel administrativo. Deve parecer um ambiente operacio
 | `--background` | Fundo base | `#080808` |
 | `--foreground` | Texto principal | `#f4f4f5` |
 | `--muted` | Texto secundario | `#a1a1aa` |
-| `--border` | Bordas comuns | `rgba(255,255,255,.12)` |
+| `--border` | Bordas comuns | `rgba(255,255,255,.10)` |
 | `--orange` | Acao principal / marca | `#ff6a00` |
 | `--green` | OK / aprovado / receita | `#17d18b` |
 | `--blue` | Sistema / informacao | `#3b82f6` |
 | `--violet` | Producao / pipeline | `#8b5cf6` |
 | `--cyan` | Review / documentos | `#22d3ee` |
 | `--glass-bg` | Superficie glass | gradiente translúcido |
-| `--glass-border` | Borda glass | `rgba(255,255,255,.105)` |
-| `--glass-shadow` | Profundidade | `0 24px 90px rgba(0,0,0,.36)` |
-| `--glass-blur` | Blur | `blur(22px) saturate(1.32)` |
+| `--glass-border` | Borda glass | `rgba(255,255,255,.092)` |
+| `--glass-shadow` | Profundidade | `0 18px 60px rgba(0,0,0,.30)` |
+| `--glass-blur` | Blur | `blur(18px) saturate(1.18)` |
 
 ## Espacamento
 
 - `8px`: separacao minima entre chips e controles compactos.
 - `12px`: padding de botoes pequenos e linhas de lista.
 - `16px`: gap padrao entre grupos proximos.
-- `24px`: padding de superficies e secoes.
+- `20px`: padding de superficies principais.
+- `24px`: usado apenas em secoes de destaque ou telas de review.
 - `32px`: separacao entre blocos de pagina.
 
 Regra: se a tela parecer "blocada", aumentar gap entre secoes antes de aumentar tamanho dos cards.
@@ -36,19 +37,21 @@ Regra: se a tela parecer "blocada", aumentar gap entre secoes antes de aumentar 
 
 - Eyebrow: `10-12px`, uppercase, `font-black`, letter spacing positivo.
 - Texto auxiliar: `13-14px`, line-height `1.5-1.65`.
-- Titulo de card: `20-28px`, `font-black`.
-- Hero/cockpit: `36-56px`, apenas em primeiro contexto da pagina.
-- Numeros/KPIs: `clamp(...)`, sempre com `break-words` para nao vazar do card.
+- Titulo de card: `18-24px`, `font-black`.
+- Hero/cockpit: `32-48px`, apenas em primeiro contexto da pagina.
+- Numeros/KPIs: `clamp(...)` contido, sempre com `break-words` para nao vazar do card.
 
 Regra: nao usar texto hero dentro de cards pequenos.
 
 ## Superficies
 
-- `Surface`: bloco principal com glass, raio grande e padding generoso.
+- `Surface`: bloco principal com glass, raio `16px` e padding `16-20px`.
 - Card de item: cliente, projeto, documento ou lancamento.
 - Dock/toast/modal: sempre com blur e sombra mais forte.
 
 Evitar cards dentro de cards. Preferir bandas/secoes e listas internas sem moldura pesada.
+
+Regra de raio: componentes operacionais usam `8px-16px`. Raios maiores ficam restritos a hero, lock screen, modal especial ou superficies de review.
 
 ## Estados de componentes
 

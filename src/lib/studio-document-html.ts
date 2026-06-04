@@ -1,4 +1,5 @@
-import type { BusinessProfile } from "@/lib/workspace-state";
+import { presetById, studioDocById } from "@/lib/constants";
+import { getClientName, type BusinessProfile, type StudioDocumentRecord, type WorkspaceState } from "@/lib/workspace-state";
 
 type StudioDocumentHtmlInput = {
   businessProfile: BusinessProfile;
@@ -109,4 +110,25 @@ export function buildStudioDocumentHtml(input: StudioDocumentHtmlInput) {
   </main>
 </body>
 </html>`;
+}
+
+export function buildStudioDocumentHtmlFromRecord(state: WorkspaceState, record: StudioDocumentRecord) {
+  if (record.html) return record.html;
+
+  const doc = studioDocById(record.docType);
+  const preset = presetById(record.presetId);
+  const project = state.projects.find((item) => item.id === record.projectId);
+  const clientName = getClientName(state, record.clientId || project?.clientId);
+
+  return buildStudioDocumentHtml({
+    businessProfile: state.businessProfile,
+    docLabel: doc.label,
+    docColor: doc.color,
+    title: record.title,
+    subtitle: doc.description,
+    clientName,
+    projectTitle: project?.title || preset.title,
+    presetTitle: preset.title,
+    payload: record.payload,
+  });
 }

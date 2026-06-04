@@ -47,6 +47,11 @@ type CreateReviewDeliverableInput = {
   workspaceId: string;
 };
 
+type PublicReviewPayload = {
+  deliverable?: DeliverableRow | null;
+  comments?: CommentRow[] | null;
+} | null;
+
 function selectDeliverableColumns() {
   return "id,project_id,title,version,video_url,public_url,drive_file_id,video_source,thumbnail_url,duration_seconds,review_token,status,revision_round,expires_at,created_at,updated_at";
 }
@@ -166,21 +171,27 @@ function mapComment(row: CommentRow): VideoComment {
   };
 }
 
-export async function getDeliverableByToken(token: string) {
+function mapPublicReviewPayload(payload: PublicReviewPayload) {
+  if (!payload?.deliverable) return null;
+
+  return {
+    ...mapDeliverable(payload.deliverable),
+    comments: (payload.comments ?? []).map(mapComment),
+  };
+}
+
+export async function getPublicReviewByToken(token: string) {
   const supabase = getSupabaseBrowserClient();
   if (!supabase || !token) return null;
 
-  const { data, error } = await supabase
-    .from("deliverables")
-    .select(selectDeliverableColumns())
-    .eq("review_token", token)
-    .limit(1)
-    .maybeSingle<DeliverableRow>();
-
+  const { data, error } = await supabase.rpc("get_public_review", { p_review_token: token });
   if (error || !data) return null;
-  if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
 
-  return mapDeliverable(data);
+  return mapPublicReviewPayload(data as PublicReviewPayload);
+}
+
+export async function getDeliverableByToken(token: string) {
+  return getPublicReviewByToken(token);
 }
 
 export async function getCommentsByDeliverable(deliverableId: string) {
@@ -230,6 +241,31 @@ export async function createVideoComment(payload: {
   return mapComment(data);
 }
 
+export async function createPublicVideoComment(payload: {
+  reviewToken: string;
+  timestampSeconds: number;
+  timecode: string;
+  authorName: string;
+  authorEmail?: string;
+  content: string;
+}) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("add_public_review_comment", {
+    p_review_token: payload.reviewToken,
+    p_timestamp_seconds: payload.timestampSeconds,
+    p_timecode: payload.timecode,
+    p_author_name: payload.authorName,
+    p_author_email: payload.authorEmail || "",
+    p_content: payload.content,
+  });
+
+  if (error || !data) return null;
+
+  return mapComment(data as CommentRow);
+}
+
 export async function updateDeliverableStatus(deliverableId: string, status: ReviewStatus) {
   const supabase = getSupabaseBrowserClient();
   if (!supabase) return null;
@@ -244,4 +280,18 @@ export async function updateDeliverableStatus(deliverableId: string, status: Rev
   if (error || !data) return null;
 
   return mapDeliverable(data);
+}
+
+export async function updatePublicReviewStatus(reviewToken: string, status: ReviewStatus) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("set_public_review_status", {
+    p_review_token: reviewToken,
+    p_status: status,
+  });
+
+  if (error || !data) return null;
+
+  return data as { id: string; review_token: string; status: ReviewStatus; updated_at?: string };
 }

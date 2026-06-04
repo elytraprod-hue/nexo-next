@@ -87,7 +87,7 @@ export function LandingPage() {
   return (
     <main className="min-h-screen bg-[#080808] text-zinc-100">
       <section
-        className="relative min-h-[92svh] overflow-hidden bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8"
+        className="relative min-h-[88svh] overflow-hidden bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8"
         style={{
           backgroundImage:
             "linear-gradient(90deg, rgba(8,8,8,.94) 0%, rgba(8,8,8,.78) 42%, rgba(8,8,8,.36) 100%), url('https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1800&q=85')",
@@ -95,52 +95,52 @@ export function LandingPage() {
       >
         <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <Link className="flex items-center gap-3" href="/">
-            <span className="grid size-12 place-items-center rounded-2xl bg-orange-500 text-2xl font-black text-black">N</span>
+            <span className="grid size-11 place-items-center rounded-xl bg-orange-500 text-xl font-black text-black">N</span>
             <span>
               <span className="block text-xl font-black leading-none">NEXO</span>
               <span className="block text-xs font-black uppercase tracking-[0.28em] text-orange-300">Studio OS</span>
             </span>
           </Link>
           <div className="flex items-center gap-2">
-            <Link className="hidden rounded-2xl px-4 py-3 text-sm font-black text-zinc-300 transition hover:text-white sm:inline-flex" href="#modulos">
+            <Link className="hidden rounded-lg px-4 py-3 text-sm font-black text-zinc-300 transition hover:text-white sm:inline-flex" href="#modulos">
               Módulos
             </Link>
-            <Link className="hidden rounded-2xl px-4 py-3 text-sm font-black text-zinc-300 transition hover:text-white sm:inline-flex" href="#planos">
+            <Link className="hidden rounded-lg px-4 py-3 text-sm font-black text-zinc-300 transition hover:text-white sm:inline-flex" href="#planos">
               Planos
             </Link>
-            <Link className="rounded-2xl bg-orange-500 px-4 py-3 text-sm font-black text-black transition hover:bg-orange-400" href="/dashboard">
-              Entrar
+            <Link className="rounded-lg bg-orange-500 px-4 py-3 text-sm font-black text-black transition hover:bg-orange-400" href="/dashboard">
+              Entrar GitHub
             </Link>
           </div>
         </nav>
 
-        <div className="mx-auto grid min-h-[calc(92svh-84px)] max-w-7xl items-center gap-8 py-16 lg:grid-cols-[minmax(0,1fr)_430px]">
+        <div className="mx-auto grid min-h-[calc(88svh-84px)] max-w-7xl items-center gap-8 py-14 lg:grid-cols-[minmax(0,1fr)_410px]">
           <div className="max-w-3xl">
             <p className="text-xs font-black uppercase tracking-[0.28em] text-orange-300">Sistema operacional para audiovisual</p>
-            <h1 className="mt-5 text-5xl font-black leading-[0.95] sm:text-7xl lg:text-8xl">NEXO Studio OS</h1>
-            <p className="mt-6 max-w-2xl text-lg font-bold leading-8 text-zinc-300">
+            <h1 className="mt-5 text-4xl font-black leading-tight sm:text-5xl">NEXO Studio OS</h1>
+            <p className="mt-5 max-w-2xl text-base font-bold leading-8 text-zinc-300 sm:text-lg">
               Venda, produção, documentos, financeiro e aprovação de vídeo em um ambiente feito para filmmakers e produtoras que precisam operar sem virar administradores.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-black transition hover:bg-orange-400" href="#planos">
+              <Link className="inline-flex min-h-12 items-center gap-2 rounded-lg bg-orange-500 px-5 text-sm font-black text-black transition hover:bg-orange-400" href="#planos">
                 Ver planos
                 <ArrowRight size={17} />
               </Link>
-              <Link className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/15 bg-black/35 px-5 text-sm font-black text-white backdrop-blur-xl transition hover:bg-white/10" href="/dashboard">
-                Entrar no workspace
+              <Link className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-white/15 bg-black/35 px-5 text-sm font-black text-white backdrop-blur-xl transition hover:bg-white/10" href="/dashboard">
+                Entrar com GitHub
               </Link>
             </div>
           </div>
 
-          <aside className="hidden rounded-[32px] border border-white/10 bg-black/45 p-5 shadow-2xl backdrop-blur-2xl lg:block">
+          <aside className="hidden rounded-2xl border border-white/10 bg-black/45 p-4 shadow-2xl backdrop-blur-2xl lg:block">
             <div className="flex items-center justify-between gap-4">
               <p className="text-xs font-black uppercase tracking-[0.24em] text-zinc-400">Modelo de operação</p>
               <span className="rounded-full border border-orange-400/30 bg-orange-500/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-orange-300">ao vivo</span>
             </div>
             <div className="mt-5 grid gap-3">
               {flow.map(([title, text], index) => (
-                <div key={title} className="grid grid-cols-[54px_1fr_10px] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.045] p-3">
-                  <span className="grid size-12 place-items-center rounded-2xl bg-orange-500/15 text-sm font-black text-orange-300">{String(index + 1).padStart(2, "0")}</span>
+                <div key={title} className="grid grid-cols-[48px_1fr_10px] items-center gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-3">
+                  <span className="grid size-11 place-items-center rounded-lg bg-orange-500/15 text-sm font-black text-orange-300">{String(index + 1).padStart(2, "0")}</span>
                   <span>
                     <span className="block text-sm font-black text-white">{title}</span>
                     <span className="mt-1 block text-xs font-bold leading-5 text-zinc-500">{text}</span>
@@ -155,7 +155,7 @@ export function LandingPage() {
                 ["PDF", "docs prontos"],
                 ["REV", "aprovação"],
               ].map(([value, label]) => (
-                <div key={value} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                <div key={value} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
                   <p className="text-xl font-black text-white">{value}</p>
                   <p className="mt-1 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-500">{label}</p>
                 </div>
@@ -166,17 +166,17 @@ export function LandingPage() {
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#080808] to-transparent" />
       </section>
 
-      <section id="modulos" className="px-4 py-16 sm:px-6 lg:px-8">
+      <section id="modulos" className="px-4 py-14 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-3xl">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-300">Operação completa</p>
-            <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">Um produto para o dia real de uma produtora.</h2>
+            <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">Um produto para o dia real de uma produtora.</h2>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             {modules.map((item) => {
               const Icon = item.icon;
               return (
-                <article key={item.title} className="rounded-[28px] border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl">
+                <article key={item.title} className="rounded-xl border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl">
                   <Icon className="text-orange-300" size={24} />
                   <h3 className="mt-5 text-xl font-black">{item.title}</h3>
                   <p className="mt-3 text-sm font-bold leading-6 text-zinc-500">{item.text}</p>
@@ -187,11 +187,11 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-6 lg:px-8">
+      <section className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[1fr_1.2fr]">
-          <div className="rounded-[32px] border border-orange-400/20 bg-orange-500/10 p-6">
+          <div className="rounded-2xl border border-orange-400/20 bg-orange-500/10 p-5">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-orange-300">Diferencial</p>
-            <h2 className="mt-4 text-4xl font-black leading-tight">Não é CRM genérico. É a mesa de operação da produtora.</h2>
+            <h2 className="mt-3 text-3xl font-black leading-tight">Não é CRM genérico. É a mesa de operação da produtora.</h2>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {[
@@ -202,7 +202,7 @@ export function LandingPage() {
               "Dados da produtora como fonte central",
               "Próximas ações sempre visíveis",
             ].map((item) => (
-              <div key={item} className="flex items-center gap-3 rounded-3xl border border-white/10 bg-white/[0.045] p-4">
+              <div key={item} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-4">
                 <CheckCircle2 className="shrink-0 text-emerald-300" size={20} />
                 <p className="font-black">{item}</p>
               </div>
@@ -211,19 +211,18 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section id="planos" className="px-4 py-16 sm:px-6 lg:px-8">
+      <section id="planos" className="px-4 py-14 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-violet-300">Planos</p>
-          <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">Comece simples. Cresça por operação.</h2>
+          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">Comece simples. Cresça por operação.</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {plans.map((plan) => (
               <article
                 key={plan.name}
-                className={`relative overflow-hidden rounded-[28px] border p-6 backdrop-blur-xl ${
+                className={`relative overflow-hidden rounded-xl border p-5 backdrop-blur-xl ${
                   plan.highlight ? "border-orange-400/45 bg-orange-500/10 shadow-[0_24px_90px_rgba(249,115,22,0.10)]" : "border-white/10 bg-white/[0.045]"
                 }`}
               >
-                <div className="absolute -right-10 -top-10 size-28 rounded-full opacity-10" style={{ background: plan.color }} />
                 <div className="relative">
                   <span className="inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em]" style={{ borderColor: `${plan.color}55`, color: plan.color, background: `${plan.color}14` }}>
                     {plan.audience}
@@ -234,7 +233,7 @@ export function LandingPage() {
                     <span className="text-4xl font-black text-white">{plan.price}</span>
                     <span className="ml-1 text-sm font-black text-zinc-500">{plan.period}</span>
                   </div>
-                  <div className="mt-5 rounded-2xl border p-4" style={{ borderColor: `${plan.color}36`, background: `${plan.color}0d` }}>
+                  <div className="mt-5 rounded-lg border p-4" style={{ borderColor: `${plan.color}36`, background: `${plan.color}0d` }}>
                     <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em]" style={{ color: plan.color }}>Entregáveis reais</p>
                     <div className="grid gap-2">
                       {plan.deliverables.map((item) => (
@@ -251,12 +250,12 @@ export function LandingPage() {
             ))}
           </div>
           <div className="mt-10 flex flex-wrap gap-3">
-            <Link className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-black transition hover:bg-orange-400" href="/dashboard">
-              Entrar no workspace
+            <Link className="inline-flex min-h-12 items-center gap-2 rounded-lg bg-orange-500 px-5 text-sm font-black text-black transition hover:bg-orange-400" href="/dashboard">
+              Entrar com GitHub
               <ArrowRight size={17} />
             </Link>
             <a
-              className="inline-flex min-h-12 items-center rounded-2xl border border-white/15 bg-white/[0.045] px-5 text-sm font-black text-white transition hover:bg-white/10"
+              className="inline-flex min-h-12 items-center rounded-lg border border-white/15 bg-white/[0.045] px-5 text-sm font-black text-white transition hover:bg-white/10"
               href={`https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent("Olá, quero entender qual plano do NEXO faz sentido para minha operação audiovisual.")}`}
               rel="noopener noreferrer"
               target="_blank"

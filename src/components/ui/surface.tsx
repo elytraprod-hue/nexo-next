@@ -5,5 +5,5 @@ type SurfaceProps = PropsWithChildren<{
 }>;
 
 export function Surface({ children, className = "" }: SurfaceProps) {
-  return <section className={`glass-panel rounded-[28px] p-5 sm:p-7 ${className}`}>{children}</section>;
+  return <section className={`glass-panel rounded-2xl p-4 sm:p-5 ${className}`}>{children}</section>;
 }

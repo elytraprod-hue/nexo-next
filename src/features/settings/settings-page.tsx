@@ -30,7 +30,7 @@ function Input({
 }) {
   return (
     <input
-      className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
+      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
       placeholder={placeholder}
       type={type}
       value={value}
@@ -42,7 +42,7 @@ function Input({
 function Area({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder?: string }) {
   return (
     <textarea
-      className="focus-ring min-h-28 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
+      className="focus-ring min-h-28 rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
       placeholder={placeholder}
       value={value}
       onChange={(event) => onChange(event.target.value)}
@@ -79,7 +79,7 @@ export function SettingsPage() {
       subtitle="Dados da produtora usados em propostas, contratos, recibos, relatórios e entregas."
       title="Empresa"
     >
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="grid gap-4">
           <Surface>
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -175,14 +175,14 @@ export function SettingsPage() {
         <aside className="grid content-start gap-4">
           <Surface>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Preview da marca</p>
-            <div className="mt-5 rounded-[28px] border border-orange-400/20 bg-orange-500/10 p-5">
+            <div className="mt-5 rounded-2xl border border-orange-400/20 bg-orange-500/10 p-4">
               {draft.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img alt={`Logo ${draft.name}`} className="h-16 max-w-44 object-contain" src={draft.logoUrl} />
               ) : (
-                <div className="grid size-16 place-items-center rounded-2xl bg-orange-500 text-2xl font-black text-black">{draft.name.slice(0, 1) || "N"}</div>
+                <div className="grid size-14 place-items-center rounded-xl bg-orange-500 text-xl font-black text-black">{draft.name.slice(0, 1) || "N"}</div>
               )}
-              <h3 className="mt-5 text-3xl font-black leading-none">{draft.name || "Sua produtora"}</h3>
+              <h3 className="mt-4 text-2xl font-black leading-tight">{draft.name || "Sua produtora"}</h3>
               <p className="mt-2 text-sm leading-6 text-zinc-400">{draft.legalName || "Razão social ainda não definida"}</p>
               <div className="mt-5 grid gap-2 text-sm font-bold text-zinc-300">
                 <span>{draft.email || "E-mail não definido"}</span>

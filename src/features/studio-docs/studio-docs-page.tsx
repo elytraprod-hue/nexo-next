@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { Download, FileText, History, Save, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +17,7 @@ type Payload = Record<string, string>;
 
 export function StudioDocsPage() {
   const { state, actions } = useWorkspaceState();
+  const searchParams = useSearchParams();
   const [docType, setDocType] = useState<StudioDocId>("briefing");
   const [clientId, setClientId] = useState(state.clients[0]?.id ?? "");
   const [projectId, setProjectId] = useState(state.projects[0]?.id ?? "");
@@ -27,6 +30,21 @@ export function StudioDocsPage() {
   const preset = presetById(presetId);
   const project = state.projects.find((item) => item.id === projectId);
   const clientName = getClientName(state, clientId || project?.clientId);
+  const restoredDocument = useMemo(() => {
+    const documentId = searchParams.get("document");
+    return documentId ? state.documents.find((item) => item.id === documentId) ?? null : null;
+  }, [searchParams, state.documents]);
+
+  useEffect(() => {
+    if (!restoredDocument) return;
+
+    setDocType(restoredDocument.docType);
+    setClientId(restoredDocument.clientId ?? "");
+    setProjectId(restoredDocument.projectId ?? "");
+    setPresetId(restoredDocument.presetId);
+    setPayload(restoredDocument.payload);
+    setLatestId(restoredDocument.id);
+  }, [restoredDocument]);
 
   const preview = useMemo(
     () =>
@@ -95,7 +113,7 @@ export function StudioDocsPage() {
       subtitle="Documentos pensados para audiovisual, com campos próprios e histórico salvo."
       title="Documentos"
     >
-      <section className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <section className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
         <div className="grid gap-4">
           <Surface className="xl:sticky xl:top-32">
             <div className="flex items-center gap-3">
@@ -103,15 +121,15 @@ export function StudioDocsPage() {
               <h2 className="text-xl font-black">Tipo de documento</h2>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-zinc-500">
-              <span className="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-2 py-2 text-cyan-300">1. Tipo</span>
-              <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2">2. Base</span>
-              <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2">3. PDF</span>
+              <span className="rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-2 py-2 text-cyan-300">1. Tipo</span>
+              <span className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-2">2. Base</span>
+              <span className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-2">3. PDF</span>
             </div>
             <div className="mt-5 grid gap-3">
               {STUDIO_DOCUMENTS.map((item) => (
                 <button
                   key={item.id}
-                  className={`focus-ring rounded-2xl border p-3 text-left transition ${
+                  className={`focus-ring rounded-lg border p-3 text-left transition ${
                     docType === item.id ? "border-cyan-300 bg-cyan-300/10" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07]"
                   }`}
                   type="button"
@@ -136,7 +154,7 @@ export function StudioDocsPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <Badge color={doc.color}>{doc.label}</Badge>
-                <h2 className="mt-4 text-3xl font-black">{config.title}</h2>
+                <h2 className="mt-3 text-2xl font-black">{config.title}</h2>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">{config.tone}</p>
               </div>
               <Button onClick={generateDocument}>
@@ -145,14 +163,14 @@ export function StudioDocsPage() {
               </Button>
             </div>
 
-            <div className="mt-7 rounded-[26px] border border-white/10 bg-white/[0.035] p-4">
+            <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.035] p-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Base do documento</p>
               <p className="mt-2 text-sm leading-6 text-zinc-500">Escolha cliente, projeto e tipo de produção. O restante do documento usa essas escolhas como contexto.</p>
               <div className="mt-4 grid gap-4 lg:grid-cols-3">
               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                 Cliente
                 <select
-                  className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                  className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
                   value={clientId}
                   onChange={(event) => setClientId(event.target.value)}
                 >
@@ -166,7 +184,7 @@ export function StudioDocsPage() {
               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                 Projeto
                 <select
-                  className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                  className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
                   value={projectId}
                   onChange={(event) => chooseProject(event.target.value)}
                 >
@@ -180,7 +198,7 @@ export function StudioDocsPage() {
               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                 Base
                 <select
-                  className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                  className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
                   value={presetId}
                   onChange={(event) => setPresetId(event.target.value)}
                 >
@@ -194,14 +212,14 @@ export function StudioDocsPage() {
               </div>
             </div>
 
-            <div className="mt-5 rounded-[26px] border border-white/10 bg-black/20 p-4">
+            <div className="mt-5 rounded-xl border border-white/10 bg-black/20 p-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">Informações específicas</p>
               <div className="mt-4 grid gap-4 xl:grid-cols-2">
                 {config.fields.map((field) => (
                   <label key={field.key} className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                     {field.label}
                     <input
-                      className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
                       placeholder={field.placeholder}
                       type={field.type ?? "text"}
                       value={payload[field.label] ?? ""}
@@ -216,7 +234,7 @@ export function StudioDocsPage() {
                   <label key={area.key} className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                     {area.label}
                     <textarea
-                      className="focus-ring min-h-40 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
+                      className="focus-ring min-h-36 rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
                       placeholder={area.placeholder}
                       value={payload[area.label] ?? ""}
                       onChange={(event) => setPayloadValue(area.label, event.target.value)}
@@ -240,14 +258,14 @@ export function StudioDocsPage() {
                 </button>
               </div>
               {latestId ? <p className="mt-3 text-sm font-bold text-emerald-300">Documento salvo no histórico.</p> : null}
-              <div className="mt-5 overflow-hidden rounded-3xl border border-white/10 bg-black/35">
+              <div className="mt-5 overflow-hidden rounded-xl border border-white/10 bg-black/35">
                 <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                   <span>Preview PDF</span>
                   <span className="text-orange-300">{preset.label}</span>
                 </div>
                 <iframe className="h-[620px] w-full bg-[#f6f1e8]" title="Preview do documento" srcDoc={previewHtml} />
               </div>
-              <details className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <details className="mt-3 rounded-lg border border-white/10 bg-white/[0.035] p-4">
                 <summary className="cursor-pointer text-sm font-black text-zinc-300">Ver texto estruturado</summary>
                 <pre className="mt-4 whitespace-pre-wrap text-sm leading-7 text-zinc-300">{preview}</pre>
               </details>
@@ -264,15 +282,23 @@ export function StudioDocsPage() {
                     const item = studioDocById(record.docType);
 
                     return (
-                      <article key={record.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                      <article key={record.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
                         <Badge color={item.color}>{item.label}</Badge>
                         <h3 className="mt-3 font-black">{record.title}</h3>
                         <p className="mt-2 text-xs text-zinc-500">{new Date(record.createdAt).toLocaleString("pt-BR")}</p>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <Link className="rounded-lg border border-white/10 bg-white/[0.055] px-3 py-2 text-xs font-black text-zinc-200 transition hover:text-white" href={`/studio/documentos/${record.id}`}>
+                            Abrir
+                          </Link>
+                          <Link className="rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-black text-cyan-200 transition hover:bg-cyan-300/15" href={`/studio?document=${record.id}`}>
+                            Restaurar
+                          </Link>
+                        </div>
                       </article>
                     );
                   })
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-white/10 p-6 text-sm leading-6 text-zinc-500">
+                  <div className="rounded-lg border border-dashed border-white/10 p-6 text-sm leading-6 text-zinc-500">
                     Gere o primeiro documento para criar histórico por cliente/projeto.
                   </div>
                 )}

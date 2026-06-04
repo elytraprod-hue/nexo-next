@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import type { MemberStatus, UserRole } from "@/lib/auth/roles";
 import { studioDocById, type PipelineKey, type RelationshipType, type StudioDocId, presetById } from "@/lib/constants";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
@@ -17,6 +18,7 @@ import {
   type StudioDocumentRecord,
   type WorkspaceState,
 } from "@/lib/workspace-state";
+import { buildStudioDocumentHtml } from "@/lib/studio-document-html";
 import {
   deleteClient,
   deleteProject,
@@ -27,6 +29,9 @@ import {
   updateBusinessProfile as updateCloudBusinessProfile,
   updateProjectChecklist,
   updateProjectPipeline,
+  updateWorkspaceMemberRole as updateCloudWorkspaceMemberRole,
+  updateWorkspaceMemberStatus as updateCloudWorkspaceMemberStatus,
+  type WorkspaceMemberRecord,
 } from "@/services/workspace-service";
 
 const STORAGE_KEY = "nexo-next-workspace-state";
@@ -52,6 +57,9 @@ function useWorkspaceStateModel() {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [workspaceRole, setWorkspaceRole] = useState<UserRole | null>(null);
+  const [workspaceMemberStatus, setWorkspaceMemberStatus] = useState<MemberStatus | null>(null);
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMemberRecord[]>([]);
   const [syncStatus, setSyncStatus] = useState<"local" | "loading" | "cloud" | "error">("local");
   const [syncMessage, setSyncMessage] = useState("");
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
@@ -62,6 +70,9 @@ function useWorkspaceStateModel() {
 
     if (!supabase || !nextSession?.user) {
       setWorkspaceId(null);
+      setWorkspaceRole(null);
+      setWorkspaceMemberStatus(null);
+      setWorkspaceMembers([]);
       setSyncStatus("local");
       setSyncMessage(supabase ? "Dados locais até entrar." : "Supabase não configurado.");
       setState(readStoredState());
@@ -75,12 +86,18 @@ function useWorkspaceStateModel() {
     try {
       const cloud = await loadCloudWorkspace(supabase, nextSession.user);
       setWorkspaceId(cloud.workspaceId);
+      setWorkspaceRole(cloud.role);
+      setWorkspaceMemberStatus(cloud.status);
+      setWorkspaceMembers(cloud.members);
       setState(cloud.state);
       setSyncStatus("cloud");
       setSyncMessage("Workspace conectado ao Supabase.");
     } catch (error) {
       console.error(error);
       setWorkspaceId(null);
+      setWorkspaceRole(null);
+      setWorkspaceMemberStatus(null);
+      setWorkspaceMembers([]);
       setState(readStoredState());
       setSyncStatus("error");
       setSyncMessage("Supabase conectado, mas o schema/RLS ainda precisa ser aplicado.");
@@ -294,6 +311,17 @@ function useWorkspaceStateModel() {
               presetTitle: preset.title,
               payload: input.payload,
             }),
+            html: buildStudioDocumentHtml({
+              businessProfile: current.businessProfile,
+              docLabel: doc.label,
+              docColor: doc.color,
+              title,
+              subtitle: doc.description,
+              clientName,
+              projectTitle: project?.title || preset.title,
+              presetTitle: preset.title,
+              payload: input.payload,
+            }),
             createdAt: new Date().toISOString(),
           };
 
@@ -323,21 +351,59 @@ function useWorkspaceStateModel() {
           return;
         }
 
-        await supabase.auth.signInWithOAuth({
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        setSyncStatus("loading");
+        setSyncMessage("Abrindo login com GitHub...");
+
+        const { error } = await supabase.auth.signInWithOAuth({
           provider: "github",
-          options: {
-            redirectTo: window.location.origin,
-          },
+          options: { redirectTo },
         });
+
+        if (error) {
+          setSyncStatus("error");
+          setSyncMessage(`GitHub não iniciou: ${error.message}`);
+        }
       },
       async signOut() {
         await supabase?.auth.signOut();
         setSession(null);
         setUser(null);
         setWorkspaceId(null);
+        setWorkspaceRole(null);
+        setWorkspaceMemberStatus(null);
+        setWorkspaceMembers([]);
         setSyncStatus("local");
         setSyncMessage("Sessão encerrada. Usando dados locais.");
         setState(readStoredState());
+      },
+      async updateWorkspaceMemberRole(memberId: string, role: UserRole) {
+        if (!supabase || !workspaceId) return null;
+
+        try {
+          const member = await updateCloudWorkspaceMemberRole(supabase, memberId, role);
+          setWorkspaceMembers((current) => current.map((item) => (item.id === member.id ? member : item)));
+          return member;
+        } catch (error) {
+          console.error(error);
+          setSyncStatus("error");
+          setSyncMessage("Não foi possível alterar a permissão.");
+          return null;
+        }
+      },
+      async updateWorkspaceMemberStatus(memberId: string, status: MemberStatus) {
+        if (!supabase || !workspaceId) return null;
+
+        try {
+          const member = await updateCloudWorkspaceMemberStatus(supabase, memberId, status);
+          setWorkspaceMembers((current) => current.map((item) => (item.id === member.id ? member : item)));
+          return member;
+        } catch (error) {
+          console.error(error);
+          setSyncStatus("error");
+          setSyncMessage("Não foi possível alterar o status do usuário.");
+          return null;
+        }
       },
     }),
     [supabase, workspaceId],
@@ -351,6 +417,9 @@ function useWorkspaceStateModel() {
     session,
     user,
     workspaceId,
+    workspaceRole,
+    workspaceMemberStatus,
+    workspaceMembers,
     supabaseConfigured: isSupabaseConfigured(),
     syncStatus,
     syncMessage,

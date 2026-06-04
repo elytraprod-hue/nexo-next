@@ -114,9 +114,9 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
   const progress = duration ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
 
   return (
-    <section className="review-grid grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+    <section className="review-grid grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="grid gap-4">
-        <div className="overflow-hidden rounded-[24px] border border-white/10 bg-black">
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
           {deliverable.videoUrl ? (
             <video
               ref={videoRef}
@@ -141,7 +141,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
           )}
         </div>
 
-        <div className="rounded-[24px] border border-white/10 bg-black/30 p-4">
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
           <div className="flex items-center justify-between gap-3 text-sm font-bold text-zinc-400">
             <span>{formatTimecode(currentTime)}</span>
             <span>{formatTimecode(duration)}</span>
@@ -176,7 +176,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
               {sortedComments.map((comment) => (
                 <button
                   key={`marker-${comment.id}`}
-                  className={`focus-ring inline-flex shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition ${
+                  className={`focus-ring inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs font-black transition ${
                     Math.abs(Number(comment.timestampSeconds ?? 0) - currentTime) <= 4
                       ? "border-cyan-300 bg-cyan-300/15 text-cyan-200"
                       : "border-white/10 bg-white/[0.045] text-zinc-400 hover:text-white"
@@ -192,11 +192,11 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
           ) : null}
         </div>
 
-        <div className="grid gap-3 rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
+        <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Comentar neste momento</p>
-              <p className="mt-1 text-2xl font-black text-orange-300">{formatTimecode(currentTime)}</p>
+              <p className="mt-1 text-xl font-black text-orange-300">{formatTimecode(currentTime)}</p>
             </div>
             <div className="flex gap-2">
               <Button disabled={isPlaying || !deliverable.videoUrl} variant="ghost" onClick={() => videoRef.current?.play()}>
@@ -210,7 +210,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
             </div>
           </div>
           {nearbyComments.length ? (
-            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-3">
+            <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/10 p-3">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Comentários deste trecho</p>
               <div className="mt-2 grid gap-2">
                 {nearbyComments.slice(0, 3).map((comment) => (
@@ -221,22 +221,22 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
               </div>
             </div>
           ) : null}
-          <div className="grid gap-3 sm:grid-cols-[180px_200px_1fr_auto]">
+          <div className="grid gap-3 xl:grid-cols-[160px_190px_1fr_auto]">
             <input
-              className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+              className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
               placeholder="Seu nome"
               value={authorName}
               onChange={(event) => setAuthorName(event.target.value)}
             />
             <input
-              className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+              className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
               placeholder="E-mail"
               type="email"
               value={authorEmail}
               onChange={(event) => setAuthorEmail(event.target.value)}
             />
             <input
-              className="focus-ring min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+              className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
               placeholder="Escreva o ajuste aqui"
               value={content}
               onChange={(event) => setContent(event.target.value)}
@@ -254,37 +254,37 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
       </div>
 
       <aside className="grid content-start gap-4">
-        <div className="rounded-[24px] border border-white/10 bg-white/[0.045] p-5">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Entregável</p>
-              <h1 className="mt-2 text-2xl font-black leading-tight">{deliverable.title}</h1>
+              <h1 className="mt-2 text-xl font-black leading-tight">{deliverable.title}</h1>
               <p className="mt-2 text-sm text-zinc-500">Versão {deliverable.version ?? 1} · Rodada {deliverable.revisionRound ?? 1}</p>
             </div>
             <Badge color={statusMeta[deliverable.status].color}>{statusMeta[deliverable.status].label}</Badge>
           </div>
-          <div className="mt-5 grid grid-cols-3 gap-2 text-xs font-black">
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-zinc-400">
+          <div className="mt-4 grid grid-cols-3 gap-2 text-xs font-black">
+            <div className="rounded-lg border border-white/10 bg-black/20 p-3 text-zinc-400">
               Status<br />
               <span className="text-orange-300">{statusMeta[deliverable.status].label}</span>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-zinc-400">
+            <div className="rounded-lg border border-white/10 bg-black/20 p-3 text-zinc-400">
               Versão<br />
               <span className="text-cyan-300">v{deliverable.version ?? 1}</span>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-zinc-400">
+            <div className="rounded-lg border border-white/10 bg-black/20 p-3 text-zinc-400">
               Ajustes<br />
               <span className="text-emerald-300">{sortedComments.length}</span>
             </div>
           </div>
-          <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+          <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
               <Link2 size={14} />
               Link público
             </div>
             <div className="mt-2 flex items-center gap-2">
               <p className="min-w-0 flex-1 truncate text-sm font-bold text-zinc-300">{publicUrl}</p>
-              <button className="grid size-10 place-items-center rounded-2xl border border-white/10 bg-white/[0.045] text-zinc-300" type="button" onClick={copyPublicLink} aria-label="Copiar link público">
+              <button className="grid size-10 place-items-center rounded-lg border border-white/10 bg-white/[0.045] text-zinc-300" type="button" onClick={copyPublicLink} aria-label="Copiar link público">
                 <Copy size={16} />
               </button>
             </div>
@@ -306,12 +306,12 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-white/10 bg-black/25 p-5">
+        <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-black">Comentários</h2>
             <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-zinc-300">{sortedComments.length}</span>
           </div>
-          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+          <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
             <GitBranch className="mb-2 text-violet-300" size={16} />
             Threads por timestamp preparadas para respostas e resolução.
           </div>
@@ -320,7 +320,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
               sortedComments.map((comment) => (
                 <button
                   key={comment.id}
-                  className="focus-ring rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
+                  className="focus-ring rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
                   type="button"
                   onClick={() => seekTo(comment.timestampSeconds ?? 0)}
                 >
@@ -335,7 +335,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
                 </button>
               ))
             ) : (
-              <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm leading-6 text-zinc-500">
+              <div className="rounded-lg border border-dashed border-white/10 p-6 text-center text-sm leading-6 text-zinc-500">
                 Nenhum comentário ainda. Pause o vídeo no ponto certo e envie o primeiro ajuste.
               </div>
             )}

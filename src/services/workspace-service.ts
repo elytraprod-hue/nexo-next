@@ -1,4 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { MemberStatus, UserRole } from "@/lib/auth/roles";
 import type { RelationshipType } from "@/lib/constants";
 import type { BusinessProfile, ClientRecord, FinanceEntry, ProjectRecord, StudioDocumentRecord, WorkspaceState } from "@/lib/workspace-state";
 
@@ -77,6 +78,7 @@ type DocumentRow = {
   preset_id: string | null;
   payload: Record<string, string>;
   summary: string | null;
+  html: string | null;
   created_at: string;
 };
 
@@ -92,7 +94,29 @@ type FinanceRow = {
   project_id: string | null;
 };
 
+type WorkspaceMemberRow = {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  email: string | null;
+  role: UserRole | null;
+  status: MemberStatus | null;
+  created_at: string;
+};
+
+export type WorkspaceMemberRecord = {
+  id: string;
+  userId: string;
+  email: string;
+  role: UserRole;
+  status: MemberStatus;
+  createdAt: string;
+};
+
 export type CloudLoadResult = {
+  members: WorkspaceMemberRecord[];
+  role: UserRole;
+  status: MemberStatus;
   workspaceId: string;
   state: WorkspaceState;
 };
@@ -179,6 +203,7 @@ function mapDocument(row: DocumentRow): StudioDocumentRecord {
     presetId: row.preset_id ?? "institucional",
     payload: row.payload ?? {},
     summary: row.summary ?? "",
+    html: row.html ?? undefined,
     createdAt: row.created_at,
   };
 }
@@ -196,16 +221,42 @@ function mapFinance(row: FinanceRow): FinanceEntry {
   };
 }
 
+function mapWorkspaceMember(row: WorkspaceMemberRow): WorkspaceMemberRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    email: row.email ?? row.user_id,
+    role: row.role ?? "member",
+    status: row.status ?? "active",
+    createdAt: row.created_at,
+  };
+}
+
 export async function ensureWorkspace(supabase: SupabaseClient, user: User) {
   const { data: member, error: memberError } = await supabase
     .from("workspace_members")
-    .select("workspace_id, role")
+    .select("workspace_id, role, status, email")
     .eq("user_id", user.id)
     .limit(1)
-    .maybeSingle<{ workspace_id: string; role: string }>();
+    .maybeSingle<{ workspace_id: string; role: UserRole | null; status: MemberStatus | null; email: string | null }>();
 
   if (memberError) throw memberError;
-  if (member?.workspace_id) return member.workspace_id;
+  if (member?.workspace_id) {
+    if (!member.email && user.email) {
+      supabase
+        .from("workspace_members")
+        .update({ email: user.email })
+        .eq("workspace_id", member.workspace_id)
+        .eq("user_id", user.id)
+        .then(() => undefined);
+    }
+
+    return {
+      role: member.role ?? "member",
+      status: member.status ?? "active",
+      workspaceId: member.workspace_id,
+    };
+  }
 
   const name = user.user_metadata?.name || user.email?.split("@")[0] || "Studio";
   const { data: workspace, error: workspaceError } = await supabase
@@ -219,12 +270,14 @@ export async function ensureWorkspace(supabase: SupabaseClient, user: User) {
   const { error: insertMemberError } = await supabase.from("workspace_members").insert({
     workspace_id: workspace.id,
     user_id: user.id,
+    email: user.email ?? null,
     role: "owner",
+    status: "active",
   });
 
   if (insertMemberError) throw insertMemberError;
 
-  return workspace.id;
+  return { role: "owner" as UserRole, status: "active" as MemberStatus, workspaceId: workspace.id };
 }
 
 export async function loadWorkspaceState(supabase: SupabaseClient, workspaceId: string): Promise<WorkspaceState> {
@@ -259,10 +312,51 @@ export async function loadWorkspaceState(supabase: SupabaseClient, workspaceId: 
 }
 
 export async function loadCloudWorkspace(supabase: SupabaseClient, user: User): Promise<CloudLoadResult> {
-  const workspaceId = await ensureWorkspace(supabase, user);
+  const membership = await ensureWorkspace(supabase, user);
+  const workspaceId = membership.workspaceId;
   const state = await loadWorkspaceState(supabase, workspaceId);
+  const members = await loadWorkspaceMembers(supabase, workspaceId);
 
-  return { workspaceId, state };
+  return { members, role: membership.role, status: membership.status, workspaceId, state };
+}
+
+export async function loadWorkspaceMembers(supabase: SupabaseClient, workspaceId: string) {
+  const { data, error } = await supabase
+    .from("workspace_members")
+    .select("id,workspace_id,user_id,email,role,status,created_at")
+    .eq("workspace_id", workspaceId)
+    .order("created_at", { ascending: true })
+    .returns<WorkspaceMemberRow[]>();
+
+  if (error) throw error;
+
+  return (data ?? []).map(mapWorkspaceMember);
+}
+
+export async function updateWorkspaceMemberRole(supabase: SupabaseClient, memberId: string, role: UserRole) {
+  const { data, error } = await supabase
+    .from("workspace_members")
+    .update({ role })
+    .eq("id", memberId)
+    .select("id,workspace_id,user_id,email,role,status,created_at")
+    .single<WorkspaceMemberRow>();
+
+  if (error) throw error;
+
+  return mapWorkspaceMember(data);
+}
+
+export async function updateWorkspaceMemberStatus(supabase: SupabaseClient, memberId: string, status: MemberStatus) {
+  const { data, error } = await supabase
+    .from("workspace_members")
+    .update({ status })
+    .eq("id", memberId)
+    .select("id,workspace_id,user_id,email,role,status,created_at")
+    .single<WorkspaceMemberRow>();
+
+  if (error) throw error;
+
+  return mapWorkspaceMember(data);
 }
 
 export async function insertClient(supabase: SupabaseClient, workspaceId: string, client: ClientRecord) {
@@ -377,6 +471,7 @@ export async function insertDocument(supabase: SupabaseClient, workspaceId: stri
     preset_id: document.presetId,
     payload: document.payload,
     summary: document.summary,
+    html: document.html ?? null,
   });
 
   if (error) throw error;

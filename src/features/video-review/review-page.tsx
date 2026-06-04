@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Surface } from "@/components/ui/surface";
 import { ReviewPlayer } from "@/features/video-review/review-player";
-import { createVideoComment, getCommentsByDeliverable, getDeliverableByToken, updateDeliverableStatus } from "@/services/review-service";
+import { createPublicVideoComment, getPublicReviewByToken, updatePublicReviewStatus } from "@/services/review-service";
 import type { ReviewDeliverable, ReviewStatus, VideoComment } from "@/types/review";
 
 const fallbackDeliverable = (token: string, initialVideoUrl?: string, initialTitle?: string, initialVideoSource: "direct" | "hls" | "drive" = "direct"): ReviewDeliverable => ({
@@ -53,7 +53,7 @@ export function ReviewPage({ initialTitle, initialVideoSource = "direct", initia
       setLoading(true);
       setError("");
 
-      const loaded = await getDeliverableByToken(token);
+      const loaded = await getPublicReviewByToken(token);
       if (!active) return;
 
       if (!loaded) {
@@ -63,10 +63,7 @@ export function ReviewPage({ initialTitle, initialVideoSource = "direct", initia
         return;
       }
 
-      const comments = await getCommentsByDeliverable(loaded.id);
-      if (!active) return;
-
-      setDeliverable({ ...loaded, comments });
+      setDeliverable(loaded);
       setLoading(false);
     }
 
@@ -99,13 +96,12 @@ export function ReviewPage({ initialTitle, initialVideoSource = "direct", initia
 
     if (deliverable.id === "demo") return;
 
-    const saved = await createVideoComment({
-      deliverableId: deliverable.id,
+    const saved = await createPublicVideoComment({
+      reviewToken: deliverable.reviewToken,
       timestampSeconds: comment.timestampSeconds,
       timecode: comment.timecode,
       authorName: comment.authorName,
       authorEmail: comment.authorEmail,
-      authorType: comment.authorType,
       content: comment.content,
     });
 
@@ -126,7 +122,7 @@ export function ReviewPage({ initialTitle, initialVideoSource = "direct", initia
     setDeliverable({ ...deliverable, status });
 
     if (deliverable.id !== "demo") {
-      await updateDeliverableStatus(deliverable.id, status);
+      await updatePublicReviewStatus(deliverable.reviewToken, status);
     }
   }
 
