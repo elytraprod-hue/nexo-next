@@ -1,7 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { MemberStatus, UserRole } from "@/lib/auth/roles";
 import type { RelationshipType } from "@/lib/constants";
-import type { BusinessProfile, ClientRecord, FinanceEntry, ProjectRecord, StudioDocumentRecord, WorkspaceState } from "@/lib/workspace-state";
+import type { BusinessProfile, ClientRecord, CommercialProposal, FinanceEntry, ProjectRecord, StudioDocumentRecord, WorkspaceState } from "@/lib/workspace-state";
 
 type WorkspaceRow = {
   id: string;
@@ -109,6 +109,24 @@ type FinanceRow = {
   due_at: string;
   client_id: string | null;
   project_id: string | null;
+};
+
+type ProposalRow = {
+  id: string;
+  workspace_id: string;
+  client_id: string;
+  project_id: string | null;
+  title: string;
+  preset_id: string;
+  scope: string;
+  amount: number;
+  status: CommercialProposal["status"];
+  valid_until: string;
+  expected_close_date: string;
+  loss_reason: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string | null;
 };
 
 type WorkspaceMemberRow = {
@@ -255,6 +273,25 @@ function mapFinance(row: FinanceRow): FinanceEntry {
   };
 }
 
+function mapProposal(row: ProposalRow): CommercialProposal {
+  return {
+    id: row.id,
+    clientId: row.client_id,
+    projectId: row.project_id ?? undefined,
+    title: row.title,
+    presetId: row.preset_id,
+    scope: row.scope,
+    amount: Number(row.amount ?? 0),
+    status: row.status ?? "draft",
+    validUntil: row.valid_until,
+    expectedCloseDate: row.expected_close_date,
+    lossReason: row.loss_reason ?? undefined,
+    notes: row.notes ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at ?? undefined,
+  };
+}
+
 function mapWorkspaceMember(row: WorkspaceMemberRow): WorkspaceMemberRecord {
   return {
     id: row.id,
@@ -315,7 +352,7 @@ export async function ensureWorkspace(supabase: SupabaseClient, user: User) {
 }
 
 export async function loadWorkspaceState(supabase: SupabaseClient, workspaceId: string): Promise<WorkspaceState> {
-  const [workspaceRes, clientsRes, projectsRes, documentsRes, financeRes] = await Promise.all([
+  const [workspaceRes, clientsRes, projectsRes, proposalsRes, documentsRes, financeRes] = await Promise.all([
     supabase
       .from("workspaces")
       .select("id,name,legal_name,document_number,logo_url,address,phone,email,site_url,social_links,default_signature,bank_info,fiscal_info")
@@ -323,6 +360,12 @@ export async function loadWorkspaceState(supabase: SupabaseClient, workspaceId: 
       .maybeSingle<WorkspaceRow>(),
     supabase.from("clients").select("*").eq("workspace_id", workspaceId).order("created_at", { ascending: false }).returns<ClientRow[]>(),
     supabase.from("projects").select("*").eq("workspace_id", workspaceId).order("created_at", { ascending: false }).returns<ProjectRow[]>(),
+    supabase
+      .from("commercial_proposals")
+      .select("*")
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: false })
+      .returns<ProposalRow[]>(),
     supabase
       .from("document_generations")
       .select("*")
@@ -332,13 +375,14 @@ export async function loadWorkspaceState(supabase: SupabaseClient, workspaceId: 
     supabase.from("finance_entries").select("*").eq("workspace_id", workspaceId).order("due_at", { ascending: true }).returns<FinanceRow[]>(),
   ]);
 
-  const error = workspaceRes.error || clientsRes.error || projectsRes.error || documentsRes.error || financeRes.error;
+  const error = workspaceRes.error || clientsRes.error || projectsRes.error || proposalsRes.error || documentsRes.error || financeRes.error;
   if (error) throw error;
 
   return {
     businessProfile: mapBusinessProfile(workspaceRes.data),
     clients: (clientsRes.data ?? []).map(mapClient),
     projects: (projectsRes.data ?? []).map(mapProject),
+    proposals: (proposalsRes.data ?? []).map(mapProposal),
     documents: (documentsRes.data ?? []).map(mapDocument),
     financeEntries: (financeRes.data ?? []).map(mapFinance),
     privacyMode: false,
@@ -492,6 +536,46 @@ export async function insertProject(supabase: SupabaseClient, workspaceId: strin
     deliverables: project.deliverables,
     approvals: project.approvals ?? [],
   });
+
+  if (error) throw error;
+}
+
+export async function insertProposal(supabase: SupabaseClient, workspaceId: string, proposal: CommercialProposal) {
+  const { error } = await supabase.from("commercial_proposals").insert({
+    id: proposal.id,
+    workspace_id: workspaceId,
+    client_id: proposal.clientId,
+    project_id: proposal.projectId ?? null,
+    title: proposal.title,
+    preset_id: proposal.presetId,
+    scope: proposal.scope,
+    amount: proposal.amount,
+    status: proposal.status,
+    valid_until: proposal.validUntil,
+    expected_close_date: proposal.expectedCloseDate,
+    loss_reason: proposal.lossReason ?? null,
+    notes: proposal.notes ?? null,
+  });
+
+  if (error) throw error;
+}
+
+export async function updateProposal(supabase: SupabaseClient, proposal: CommercialProposal) {
+  const { error } = await supabase
+    .from("commercial_proposals")
+    .update({
+      project_id: proposal.projectId ?? null,
+      title: proposal.title,
+      preset_id: proposal.presetId,
+      scope: proposal.scope,
+      amount: proposal.amount,
+      status: proposal.status,
+      valid_until: proposal.validUntil,
+      expected_close_date: proposal.expectedCloseDate,
+      loss_reason: proposal.lossReason ?? null,
+      notes: proposal.notes ?? null,
+    })
+    .eq("id", proposal.id);
 
   if (error) throw error;
 }

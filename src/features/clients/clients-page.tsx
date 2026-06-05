@@ -24,7 +24,7 @@ import { Surface } from "@/components/ui/surface";
 import { AUDIOVISUAL_PRESETS, NICHE_PLAYBOOKS, RELATIONSHIP_TYPES, type RelationshipType } from "@/lib/constants";
 import { useWorkspaceState } from "@/hooks/use-workspace-state";
 import { formatCurrency } from "@/lib/utils/format";
-import { addDaysInput, type ClientRecord } from "@/lib/workspace-state";
+import { addDaysInput, getClientName, type ClientRecord } from "@/lib/workspace-state";
 
 const relationshipDefaultPreset: Record<RelationshipType, string> = {
   cliente: "institucional",
@@ -183,15 +183,26 @@ export function ClientsPage() {
   const [quickAction, setQuickAction] = useState("Enviar proposta com escopo, investimento e próximo passo");
   const [lastCreatedClient, setLastCreatedClient] = useState<ClientRecord | null>(null);
   const [lastProjectTitle, setLastProjectTitle] = useState("");
+  const [proposalClientId, setProposalClientId] = useState(state.clients[0]?.id ?? "");
+  const [proposalPresetId, setProposalPresetId] = useState("institucional");
+  const [proposalTitle, setProposalTitle] = useState("");
+  const [proposalScope, setProposalScope] = useState("");
+  const [proposalAmount, setProposalAmount] = useState("");
+  const [proposalExpectedClose, setProposalExpectedClose] = useState(addDaysInput(3));
+  const [proposalValidUntil, setProposalValidUntil] = useState(addDaysInput(7));
+  const [lastProposalTitle, setLastProposalTitle] = useState("");
 
   const filteredClients = useMemo(
     () => (segment === "todos" ? state.clients : state.clients.filter((client) => client.relationshipType === segment)),
     [segment, state.clients],
   );
   const selectedPreset = AUDIOVISUAL_PRESETS.find((preset) => preset.id === presetId) ?? AUDIOVISUAL_PRESETS[1];
+  const selectedProposalPreset = AUDIOVISUAL_PRESETS.find((preset) => preset.id === proposalPresetId) ?? AUDIOVISUAL_PRESETS[1];
   const completedCore = [draft.name, draft.whatsapp || draft.phone || draft.email, draft.leadSource, quickAction].filter(Boolean).length;
   const hasContactPath = Boolean(draft.whatsapp || draft.phone || draft.email);
   const canCreateClient = ready && Boolean(draft.name.trim()) && hasContactPath && Boolean(draft.primaryContact.trim() || draft.personType === "pessoa_fisica");
+  const openProposals = state.proposals.filter((proposal) => proposal.status === "draft" || proposal.status === "sent");
+  const forecastAmount = openProposals.reduce((sum, proposal) => sum + proposal.amount, 0);
 
   function patchDraft(input: Partial<ClientDraft>) {
     setDraft((current) => ({ ...current, ...input }));
@@ -313,6 +324,32 @@ export function ClientsPage() {
     const confirmed = window.confirm(`Excluir ${client.name}? Projetos, financeiro e documentos vinculados também serão removidos.`);
     if (!confirmed) return;
     actions.removeClient(client.id);
+  }
+
+  function createProposal() {
+    if (!ready || !proposalClientId) return;
+    const proposal = actions.addProposal({
+      clientId: proposalClientId,
+      presetId: proposalPresetId,
+      title: proposalTitle,
+      scope: proposalScope,
+      amount: parseMoney(proposalAmount, selectedProposalPreset.value),
+      expectedCloseDate: proposalExpectedClose,
+      validUntil: proposalValidUntil,
+      status: "sent",
+    });
+    setLastProposalTitle(proposal.title);
+    setProposalTitle("");
+    setProposalScope("");
+    setProposalAmount("");
+    setProposalExpectedClose(addDaysInput(3));
+    setProposalValidUntil(addDaysInput(7));
+  }
+
+  function convertProposal(proposalId: string) {
+    if (!ready) return;
+    const project = actions.convertProposalToProject(proposalId);
+    if (project) setLastProjectTitle(project.title);
   }
 
   return (
@@ -682,7 +719,143 @@ export function ClientsPage() {
           </Surface>
         </div>
 
-        <Surface>
+        <div className="grid gap-4">
+          <Surface>
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Pipeline comercial</p>
+                <h2 className="mt-2 text-2xl font-black">Propostas e orçamentos</h2>
+                <p className="mt-2 text-sm font-bold leading-6 text-zinc-500">Crie proposta, acompanhe previsão e converta aprovado em projeto sem redigitar.</p>
+              </div>
+              <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 p-3 text-right">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">Previsão aberta</p>
+                <p className="mt-1 text-xl font-black text-emerald-200">{formatCurrency(forecastAmount, state.privacyMode)}</p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1fr]">
+              <div className="grid gap-3 rounded-xl border border-white/10 bg-black/18 p-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Field label="Cliente">
+                    <select
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                      value={proposalClientId}
+                      onChange={(event) => setProposalClientId(event.target.value)}
+                    >
+                      {state.clients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Serviço">
+                    <select
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                      value={proposalPresetId}
+                      onChange={(event) => {
+                        setProposalPresetId(event.target.value);
+                        const preset = AUDIOVISUAL_PRESETS.find((item) => item.id === event.target.value);
+                        if (preset) setProposalAmount(String(preset.value));
+                      }}
+                    >
+                      {AUDIOVISUAL_PRESETS.map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+                <Field label="Título">
+                  <input
+                    className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                    placeholder={`Proposta - ${selectedProposalPreset.title}`}
+                    value={proposalTitle}
+                    onChange={(event) => setProposalTitle(event.target.value)}
+                  />
+                </Field>
+                <Field label="Escopo">
+                  <textarea
+                    className="focus-ring min-h-28 rounded-lg border border-white/10 bg-black/20 p-3 text-sm font-bold leading-6 text-white placeholder:text-zinc-600"
+                    placeholder={`${selectedProposalPreset.service}: ${selectedProposalPreset.deliverables.join(", ")}`}
+                    value={proposalScope}
+                    onChange={(event) => setProposalScope(event.target.value)}
+                  />
+                </Field>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <Field label="Valor">
+                    <input
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                      placeholder={String(selectedProposalPreset.value)}
+                      value={proposalAmount}
+                      onChange={(event) => setProposalAmount(event.target.value)}
+                    />
+                  </Field>
+                  <Field label="Fechamento provável">
+                    <input
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                      type="date"
+                      value={proposalExpectedClose}
+                      onChange={(event) => setProposalExpectedClose(event.target.value)}
+                    />
+                  </Field>
+                  <Field label="Validade">
+                    <input
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                      type="date"
+                      value={proposalValidUntil}
+                      onChange={(event) => setProposalValidUntil(event.target.value)}
+                    />
+                  </Field>
+                </div>
+                <Button disabled={!ready || !proposalClientId} onClick={createProposal}>
+                  <Plus size={17} />
+                  Criar proposta
+                </Button>
+                {lastProposalTitle ? <p className="text-sm font-black text-emerald-300">Proposta criada: {lastProposalTitle}</p> : null}
+              </div>
+
+              <div className="grid content-start gap-3">
+                {state.proposals.length ? (
+                  state.proposals.slice(0, 6).map((proposal) => (
+                    <article key={proposal.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <Badge color={proposal.status === "approved" ? "var(--green)" : proposal.status === "lost" ? "#ef4444" : "var(--orange)"}>
+                            {proposal.status === "draft" ? "rascunho" : proposal.status === "sent" ? "enviada" : proposal.status === "approved" ? "aprovada" : proposal.status === "lost" ? "perdida" : "expirada"}
+                          </Badge>
+                          <h3 className="mt-3 font-black">{proposal.title}</h3>
+                          <p className="mt-1 text-sm text-zinc-500">{getClientName(state, proposal.clientId)}</p>
+                        </div>
+                        <p className="text-lg font-black text-emerald-300">{formatCurrency(proposal.amount, state.privacyMode)}</p>
+                      </div>
+                      <p className="mt-3 text-sm font-bold leading-6 text-zinc-400">{proposal.scope}</p>
+                      <div className="mt-4 grid gap-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500 md:grid-cols-2">
+                        <span>Fecha: {new Date(proposal.expectedCloseDate).toLocaleDateString("pt-BR")}</span>
+                        <span>Validade: {new Date(proposal.validUntil).toLocaleDateString("pt-BR")}</span>
+                      </div>
+                      {proposal.status !== "approved" ? (
+                        <Button className="mt-4" disabled={!ready} variant="success" onClick={() => convertProposal(proposal.id)}>
+                          Converter em projeto
+                          <ArrowRight size={17} />
+                        </Button>
+                      ) : null}
+                    </article>
+                  ))
+                ) : (
+                  <EmptyState
+                    description="Crie a primeira proposta para transformar conversa em previsão comercial e projeto aprovado."
+                    icon={BriefcaseBusiness}
+                    label="Comercial"
+                    title="Nenhuma proposta ainda"
+                  />
+                )}
+              </div>
+            </div>
+          </Surface>
+
+          <Surface>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Carteira</p>
@@ -838,7 +1011,8 @@ export function ClientsPage() {
               />
             )}
           </div>
-        </Surface>
+          </Surface>
+        </div>
       </section>
     </AppShell>
   );

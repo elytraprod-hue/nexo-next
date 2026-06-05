@@ -112,10 +112,28 @@ export type FinanceEntry = {
   projectId?: string;
 };
 
+export type CommercialProposal = {
+  id: string;
+  clientId: string;
+  projectId?: string;
+  title: string;
+  presetId: string;
+  scope: string;
+  amount: number;
+  status: "draft" | "sent" | "approved" | "lost" | "expired";
+  validUntil: string;
+  expectedCloseDate: string;
+  lossReason?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
 export type WorkspaceState = {
   businessProfile: BusinessProfile;
   clients: ClientRecord[];
   projects: ProjectRecord[];
+  proposals: CommercialProposal[];
   documents: StudioDocumentRecord[];
   financeEntries: FinanceEntry[];
   privacyMode: boolean;
@@ -283,6 +301,43 @@ export function buildClient(input: {
   };
 }
 
+export function buildProposal(input: {
+  amount?: number;
+  clientId: string;
+  createdAt?: string;
+  expectedCloseDate?: string;
+  id?: string;
+  lossReason?: string;
+  notes?: string;
+  presetId: string;
+  projectId?: string;
+  scope?: string;
+  status?: CommercialProposal["status"];
+  title?: string;
+  updatedAt?: string;
+  validUntil?: string;
+}): CommercialProposal {
+  const preset = presetById(input.presetId);
+  const createdAt = input.createdAt ?? new Date().toISOString();
+
+  return {
+    id: input.id ?? createId("proposal"),
+    clientId: input.clientId,
+    projectId: input.projectId,
+    title: input.title?.trim() || `Proposta - ${preset.title}`,
+    presetId: preset.id,
+    scope: input.scope?.trim() || `${preset.service}: ${preset.deliverables.join(", ")}`,
+    amount: input.amount ?? preset.value,
+    status: input.status ?? "draft",
+    validUntil: input.validUntil || addDaysInput(7),
+    expectedCloseDate: input.expectedCloseDate || addDaysInput(3),
+    lossReason: input.lossReason?.trim() || undefined,
+    notes: input.notes?.trim() || undefined,
+    createdAt,
+    updatedAt: input.updatedAt ?? createdAt,
+  };
+}
+
 export function normalizeBusinessProfile(profile?: Partial<BusinessProfile>): BusinessProfile {
   return { ...DEFAULT_BUSINESS_PROFILE, ...(profile ?? {}) };
 }
@@ -319,11 +374,22 @@ export function normalizeProject(project: ProjectRecord): ProjectRecord {
   };
 }
 
+export function normalizeProposal(proposal: CommercialProposal): CommercialProposal {
+  return {
+    ...proposal,
+    status: proposal.status ?? "draft",
+    amount: Number(proposal.amount ?? 0),
+    validUntil: proposal.validUntil ?? addDaysInput(7),
+    expectedCloseDate: proposal.expectedCloseDate ?? addDaysInput(3),
+  };
+}
+
 export function normalizeWorkspaceState(state: Partial<WorkspaceState> | undefined): WorkspaceState {
   return {
     businessProfile: normalizeBusinessProfile(state?.businessProfile),
     clients: (state?.clients ?? INITIAL_WORKSPACE_STATE.clients).map(normalizeClient),
     projects: (state?.projects ?? INITIAL_WORKSPACE_STATE.projects).map(normalizeProject),
+    proposals: (state?.proposals ?? INITIAL_WORKSPACE_STATE.proposals).map(normalizeProposal),
     documents: state?.documents ?? INITIAL_WORKSPACE_STATE.documents,
     financeEntries: state?.financeEntries ?? INITIAL_WORKSPACE_STATE.financeEntries,
     privacyMode: Boolean(state?.privacyMode),
@@ -398,6 +464,19 @@ export const INITIAL_WORKSPACE_STATE: WorkspaceState = {
       title: "Reels de autoridade",
       deadline: "2026-06-08",
       budget: 2400,
+      createdAt: "2026-06-02T00:00:00.000Z",
+    }),
+  ],
+  proposals: [
+    buildProposal({
+      id: "proposal-manifesto-institucional",
+      clientId: firstClient.id,
+      presetId: "institucional",
+      title: "Proposta - Manifesto institucional",
+      amount: 6350,
+      status: "sent",
+      expectedCloseDate: addDaysInput(4),
+      validUntil: addDaysInput(9),
       createdAt: "2026-06-02T00:00:00.000Z",
     }),
   ],

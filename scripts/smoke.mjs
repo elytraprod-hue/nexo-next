@@ -17,6 +17,7 @@ const requiredFiles = [
   "supabase/migrations/20260606_workspace_member_status.sql",
   "supabase/migrations/20260607_operational_backend_foundation.sql",
   "supabase/migrations/20260608_client_project_completeness.sql",
+  "supabase/migrations/20260609_commercial_proposals.sql",
   "src/services/operations-service.ts",
   "src/types/operations.ts",
 ];
@@ -37,6 +38,10 @@ const requiredContents = [
   ["supabase/migrations/20260607_operational_backend_foundation.sql", "public.log_activity"],
   ["supabase/migrations/20260608_client_project_completeness.sql", "alter table public.clients add column if not exists person_type"],
   ["supabase/migrations/20260608_client_project_completeness.sql", "reference_links"],
+  ["supabase/migrations/20260609_commercial_proposals.sql", "create table if not exists public.commercial_proposals"],
+  ["src/lib/workspace-state.ts", "CommercialProposal"],
+  ["src/hooks/use-workspace-state.tsx", "convertProposalToProject"],
+  ["src/features/clients/clients-page.tsx", "Pipeline comercial"],
   ["src/lib/workspace-state.ts", "personType"],
   ["src/features/clients/clients-page.tsx", "CPF/CNPJ"],
 ];

@@ -9,6 +9,7 @@ import {
   INITIAL_WORKSPACE_STATE,
   buildClient,
   buildDocumentSummary,
+  buildProposal,
   buildProject,
   createId,
   getClientName,
@@ -24,11 +25,13 @@ import {
   deleteProject,
   insertClient,
   insertDocument,
+  insertProposal,
   insertProject,
   loadCloudWorkspace,
   updateBusinessProfile as updateCloudBusinessProfile,
   updateProjectChecklist,
   updateProjectPipeline,
+  updateProposal,
   updateWorkspaceMemberRole as updateCloudWorkspaceMemberRole,
   updateWorkspaceMemberStatus as updateCloudWorkspaceMemberStatus,
   type WorkspaceMemberRecord,
@@ -255,6 +258,80 @@ function useWorkspaceStateModel() {
           });
         }
         return project;
+      },
+      addProposal(input: Parameters<typeof buildProposal>[0]) {
+        const proposal = buildProposal(input);
+        setState((current) => ({ ...current, proposals: [proposal, ...current.proposals] }));
+        if (supabase && workspaceId) {
+          insertProposal(supabase, workspaceId, proposal).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível salvar proposta no Supabase.");
+          });
+          logWorkspaceActivity({
+            action: "created",
+            entityId: proposal.id,
+            entityType: "finance",
+            metadata: { amount: proposal.amount, status: proposal.status, clientId: proposal.clientId },
+            title: `Proposta criada: ${proposal.title}`,
+            workspaceId,
+          });
+        }
+        return proposal;
+      },
+      convertProposalToProject(proposalId: string) {
+        let createdProject: ReturnType<typeof buildProject> | undefined;
+        let updatedProposal: ReturnType<typeof buildProposal> | undefined;
+
+        setState((current) => {
+          const proposal = current.proposals.find((item) => item.id === proposalId);
+          if (!proposal) return current;
+
+          createdProject = buildProject({
+            clientId: proposal.clientId,
+            presetId: proposal.presetId,
+            title: proposal.title.replace(/^Proposta\s*-\s*/i, ""),
+            briefing: proposal.scope,
+            deadline: proposal.expectedCloseDate,
+            deliveryDate: proposal.expectedCloseDate,
+            budget: proposal.amount,
+          });
+          updatedProposal = {
+            ...proposal,
+            projectId: createdProject.id,
+            status: "approved",
+            updatedAt: new Date().toISOString(),
+          };
+
+          return {
+            ...current,
+            projects: [createdProject, ...current.projects],
+            proposals: current.proposals.map((item) => (item.id === proposalId ? updatedProposal! : item)),
+          };
+        });
+
+        if (supabase && workspaceId && createdProject && updatedProposal) {
+          insertProject(supabase, workspaceId, createdProject).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível salvar projeto convertido.");
+          });
+          updateProposal(supabase, updatedProposal).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível atualizar proposta.");
+          });
+          logWorkspaceActivity({
+            action: "converted",
+            entityId: updatedProposal.id,
+            entityType: "finance",
+            metadata: { projectId: createdProject.id, amount: updatedProposal.amount },
+            title: `Proposta convertida: ${updatedProposal.title}`,
+            workspaceId,
+          });
+        }
+
+        return createdProject;
       },
       removeProject(projectId: string) {
         setState((current) => ({
