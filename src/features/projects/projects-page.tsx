@@ -5,6 +5,7 @@ import { ArrowRight, CalendarDays, CheckCircle2, Clapperboard, FileText, LayoutG
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Surface } from "@/components/ui/surface";
 import { AUDIOVISUAL_PRESETS, PRODUCTION_PIPELINE, type PipelineKey, type StudioDocId } from "@/lib/constants";
 import { addDaysInput, getClientName, type ProjectRecord } from "@/lib/workspace-state";
@@ -36,6 +37,7 @@ export function ProjectsPage() {
   const [lastDocumentTitle, setLastDocumentTitle] = useState("");
 
   const selectedPreset = AUDIOVISUAL_PRESETS.find((preset) => preset.id === presetId) ?? AUDIOVISUAL_PRESETS[1];
+  const canCreateProject = ready && Boolean(state.clients.length);
   const projectsByStatus = useMemo(
     () => ({
       briefing: state.projects.filter((project) => project.status === "briefing"),
@@ -47,7 +49,7 @@ export function ProjectsPage() {
   );
 
   function addProject() {
-    if (!ready) return;
+    if (!canCreateProject) return;
     const fallbackClient = clientId || state.clients[0]?.id;
     if (!fallbackClient) return;
     const project = actions.addProject({
@@ -104,6 +106,12 @@ export function ProjectsPage() {
     return { done, percent, nextStep };
   }
 
+  function removeProject(project: ProjectRecord) {
+    const confirmed = window.confirm(`Excluir ${project.title}? Documentos e lançamentos vinculados também serão removidos.`);
+    if (!confirmed) return;
+    actions.removeProject(project.id);
+  }
+
   function renderProjectCard(project: ProjectRecord, compact = false) {
     const { done, percent, nextStep } = getProjectProgress(project);
     const checklistDone = project.checklist.filter((item) => item.done).length;
@@ -135,7 +143,7 @@ export function ProjectsPage() {
               aria-label={`Excluir ${project.title}`}
               className="grid size-10 shrink-0 place-items-center rounded-lg border border-red-400/20 bg-red-400/10 text-red-300 transition hover:bg-red-400/20"
               type="button"
-              onClick={() => actions.removeProject(project.id)}
+              onClick={() => removeProject(project)}
             >
               <Trash2 size={17} />
             </button>
@@ -291,7 +299,16 @@ export function ProjectsPage() {
                 />
               </label>
 
-              <Button className="w-full" disabled={!state.clients.length || !ready} onClick={addProject}>
+              {!state.clients.length ? (
+                <EmptyState
+                  description="Projetos precisam nascer vinculados a um cliente para manter briefing, aprovação, financeiro e documentos conectados."
+                  icon={Clapperboard}
+                  label="Pré-requisito"
+                  title="Crie um cliente antes do projeto"
+                />
+              ) : null}
+
+              <Button className="w-full" disabled={!canCreateProject} onClick={addProject}>
                 <Plus size={17} />
                 {ready ? "Criar projeto completo" : "Restaurando workspace"}
               </Button>
@@ -362,7 +379,16 @@ export function ProjectsPage() {
 
             {view === "lista" ? (
               <div className="mt-6 grid gap-4">
-                {state.projects.map((project) => renderProjectCard(project))}
+                {state.projects.length ? (
+                  state.projects.map((project) => renderProjectCard(project))
+                ) : (
+                  <EmptyState
+                    description="Escolha um cliente e um preset audiovisual. O projeto nasce com pipeline, checklist e documento sugerido."
+                    icon={Clapperboard}
+                    label="Produção"
+                    title="Nenhum projeto criado ainda"
+                  />
+                )}
               </div>
             ) : (
               <div className="mt-6 grid gap-4 xl:grid-cols-4">
@@ -373,7 +399,11 @@ export function ProjectsPage() {
                       <span className="ml-2 text-white">{projectsByStatus[status.key].length}</span>
                     </div>
                     <div className="grid gap-3">
-                      {projectsByStatus[status.key].map((project) => renderProjectCard(project, true))}
+                      {projectsByStatus[status.key].length ? (
+                        projectsByStatus[status.key].map((project) => renderProjectCard(project, true))
+                      ) : (
+                        <div className="rounded-lg border border-dashed border-white/10 p-4 text-sm font-bold leading-6 text-zinc-600">Sem projetos nesta etapa.</div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -18,6 +18,9 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MetricCard } from "@/components/ui/metric-card";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { Surface } from "@/components/ui/surface";
 import { OperationsTimeline } from "@/features/dashboard/operations-timeline";
 import { SmartAlerts } from "@/features/dashboard/smart-alerts";
@@ -172,16 +175,7 @@ export function Dashboard() {
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {compactMetrics.map((metric) => (
-              <Link key={metric.label} className="min-h-28 rounded-xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.075]" href={metric.href}>
-                <div className="h-1.5 w-7 rounded-full" style={{ background: metric.color }} />
-                <div
-                  className={`mt-4 max-w-full break-words font-black leading-none tracking-normal ${metric.money ? "text-[clamp(1.35rem,2.2vw,1.85rem)]" : "text-3xl"}`}
-                  style={{ color: metric.color }}
-                >
-                  {metric.value}
-                </div>
-                <p className="mt-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{metric.label}</p>
-              </Link>
+              <MetricCard key={metric.label} color={metric.color} href={metric.href} label={metric.label} value={metric.value} />
             ))}
           </div>
         </Surface>
@@ -217,10 +211,12 @@ export function Dashboard() {
 
       <section className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
         <Surface>
-          <div className="flex items-center gap-3">
-            <Sparkles className="text-orange-400" />
-            <h2 className="text-xl font-black">Começar rápido</h2>
-          </div>
+          <SectionHeading
+            description="Atalhos que reduzem digitação e já abrem o próximo movimento da operação."
+            icon={Sparkles}
+            kicker="Ação guiada"
+            title="Começar rápido"
+          />
 
           {nextClient ? (
             <div className="mt-5 rounded-xl border border-orange-400/20 bg-orange-500/10 p-4">
@@ -232,7 +228,22 @@ export function Dashboard() {
                 <ArrowRight size={16} />
               </Link>
             </div>
-          ) : null}
+          ) : (
+            <div className="mt-5">
+              <EmptyState
+                action={
+                  <Link className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-black text-black transition hover:bg-orange-400" href="/clientes">
+                    Criar primeiro contato
+                    <ArrowRight size={16} />
+                  </Link>
+                }
+                description="Comece por um contato. O NEXO cria próxima ação, preset comercial e base para projeto sem pedir tudo de uma vez."
+                icon={BriefcaseBusiness}
+                label="Primeiro uso"
+                title="Sua operação ainda não tem clientes"
+              />
+            </div>
+          )}
 
           <div className="mt-4 grid gap-2">
             {AUDIOVISUAL_PRESETS.slice(0, 4).map((preset) => (
@@ -249,19 +260,21 @@ export function Dashboard() {
         </Surface>
 
         <Surface>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Clapperboard className="text-violet-300" />
-              <h2 className="text-xl font-black">Produção em andamento</h2>
-            </div>
-            <Link href="/review/demo" className="inline-flex items-center gap-2 text-sm font-black text-cyan-300">
-              <MessageSquareReply size={17} />
-              Review
-            </Link>
-          </div>
+          <SectionHeading
+            action={
+              <Link href="/review/demo" className="inline-flex items-center gap-2 text-sm font-black text-cyan-300">
+                <MessageSquareReply size={17} />
+                Review
+              </Link>
+            }
+            description="Projetos ativos aparecem com etapa, prazo e checklist para evitar produção no escuro."
+            icon={Clapperboard}
+            kicker="Produção"
+            title="Em andamento"
+          />
 
           <div className="mt-5 grid gap-3">
-            {nextProjects.map((project) => {
+            {nextProjects.length ? nextProjects.map((project) => {
               const done = PRODUCTION_PIPELINE.filter((step) => project.pipeline[step.key]).length;
               const percent = Math.round((done / PRODUCTION_PIPELINE.length) * 100);
 
@@ -293,7 +306,19 @@ export function Dashboard() {
                   </div>
                 </Link>
               );
-            })}
+            }) : (
+              <EmptyState
+                action={
+                  <Link className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-violet-400 px-4 text-sm font-black text-black transition hover:bg-violet-300" href="/projetos">
+                    Criar projeto
+                    <ArrowRight size={16} />
+                  </Link>
+                }
+                description="Depois do primeiro cliente, crie um projeto por preset para nascer com pipeline, briefing, checklist e prazo."
+                icon={Clapperboard}
+                title="Nenhuma produção aberta"
+              />
+            )}
           </div>
         </Surface>
       </section>

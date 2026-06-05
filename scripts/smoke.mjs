@@ -15,6 +15,9 @@ const requiredFiles = [
   "supabase/migrations/20260604_review_storage_upload.sql",
   "supabase/migrations/20260605_review_public_rpc_security.sql",
   "supabase/migrations/20260606_workspace_member_status.sql",
+  "supabase/migrations/20260607_operational_backend_foundation.sql",
+  "src/services/operations-service.ts",
+  "src/types/operations.ts",
 ];
 
 const requiredContents = [
@@ -24,8 +27,13 @@ const requiredContents = [
   ["src/services/review-service.ts", "set_public_review_status"],
   ["src/features/admin/admin-page.tsx", "workspaceMembers"],
   ["src/lib/auth/roles.ts", "canAccessInternal"],
+  ["src/services/operations-service.ts", "logActivity"],
+  ["src/hooks/use-workspace-state.tsx", "logWorkspaceActivity"],
   ["supabase/migrations/20260602_initial_next_foundation.sql", "encode(gen_random_bytes(32), 'hex')"],
   ["supabase/migrations/20260605_review_public_rpc_security.sql", "revoke select on public.deliverables from anon"],
+  ["supabase/migrations/20260607_operational_backend_foundation.sql", "create table if not exists public.activity_log"],
+  ["supabase/migrations/20260607_operational_backend_foundation.sql", "create table if not exists public.tasks"],
+  ["supabase/migrations/20260607_operational_backend_foundation.sql", "public.log_activity"],
 ];
 
 const failures = [];

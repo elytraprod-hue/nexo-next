@@ -205,8 +205,7 @@ h3,
   animation: slide-down 0.24s ease;
 }
 
-.quick-dock,
-.floating-actions {
+.quick-dock {
   position: fixed;
   z-index: 50;
   display: flex;
@@ -224,13 +223,6 @@ h3,
   bottom: 18px;
   padding: 8px;
   border-radius: 18px;
-}
-
-.floating-actions {
-  left: 18px;
-  bottom: 18px;
-  padding: 8px;
-  border-radius: 22px;
 }
 
 .dock-toggle {
@@ -262,8 +254,7 @@ h3,
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
 }
 
-.dock-btn:hover,
-.float-action:hover {
+.dock-btn:hover {
   transform: translateY(-1px);
   border-color: rgba(255, 106, 0, 0.42);
   color: #fff;
@@ -273,28 +264,6 @@ h3,
   border-color: rgba(255, 106, 0, 0.7);
   background: rgba(255, 106, 0, 0.16);
   color: var(--orange);
-}
-
-.float-action {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  gap: 7px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 106, 0, 0.34);
-  background: rgba(255, 106, 0, 0.14);
-  padding: 0 13px;
-  color: var(--orange);
-  font-size: 12px;
-  font-weight: 1000;
-  text-decoration: none;
-  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
-}
-
-.float-action.secondary {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: #d4d4d8;
 }
 
 .lock-screen {
@@ -345,9 +314,5 @@ h3,
 @media (max-width: 1023px) {
   .review-grid {
     grid-template-columns: 1fr;
-  }
-
-  .floating-actions {
-    display: none;
   }
 }

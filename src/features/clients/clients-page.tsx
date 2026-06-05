@@ -19,6 +19,7 @@ import {
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Surface } from "@/components/ui/surface";
 import { AUDIOVISUAL_PRESETS, NICHE_PLAYBOOKS, RELATIONSHIP_TYPES, type RelationshipType } from "@/lib/constants";
 import { useWorkspaceState } from "@/hooks/use-workspace-state";
@@ -139,6 +140,8 @@ export function ClientsPage() {
   );
   const selectedPreset = AUDIOVISUAL_PRESETS.find((preset) => preset.id === presetId) ?? AUDIOVISUAL_PRESETS[1];
   const completedCore = [draft.name, draft.whatsapp || draft.phone || draft.email, draft.leadSource, quickAction].filter(Boolean).length;
+  const hasContactPath = Boolean(draft.whatsapp || draft.phone || draft.email);
+  const canCreateClient = ready && Boolean(draft.name.trim()) && hasContactPath;
 
   function patchDraft(input: Partial<ClientDraft>) {
     setDraft((current) => ({ ...current, ...input }));
@@ -168,7 +171,7 @@ export function ClientsPage() {
   }
 
   function addGuidedClient() {
-    if (!ready) return;
+    if (!canCreateClient) return;
     const client = actions.addClient({
       name: draft.name,
       company: draft.company,
@@ -242,6 +245,12 @@ export function ClientsPage() {
       budget: client.estimatedBudget ?? client.monthlyValue ?? client.value,
     });
     setLastProjectTitle(project.title);
+  }
+
+  function removeClient(client: ClientRecord) {
+    const confirmed = window.confirm(`Excluir ${client.name}? Projetos, financeiro e documentos vinculados também serão removidos.`);
+    if (!confirmed) return;
+    actions.removeClient(client.id);
   }
 
   return (
@@ -469,11 +478,14 @@ export function ClientsPage() {
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Perfil operacional</p>
                 <p className="mt-2 text-sm font-bold text-zinc-300">{completedCore}/4 sinais preenchidos · {selectedPreset.service}</p>
               </div>
-              <Button disabled={!ready} onClick={addGuidedClient}>
+              <Button disabled={!canCreateClient} onClick={addGuidedClient}>
                 <Plus size={17} />
                 {ready ? "Criar contato completo" : "Restaurando"}
               </Button>
             </div>
+            {!canCreateClient ? (
+              <p className="mt-3 text-xs font-bold leading-5 text-zinc-500">Preencha pelo menos nome e um canal de contato para criar sem gerar carteira solta.</p>
+            ) : null}
           </Surface>
 
           {lastCreatedClient ? (
@@ -559,7 +571,7 @@ export function ClientsPage() {
           </div>
 
           <div className="mt-6 grid gap-3">
-            {filteredClients.map((client) => {
+            {filteredClients.length ? filteredClients.map((client) => {
               const relation = RELATIONSHIP_TYPES.find((item) => item.id === client.relationshipType);
 
               return (
@@ -585,7 +597,7 @@ export function ClientsPage() {
                         aria-label={`Excluir ${client.name}`}
                         className="grid size-10 place-items-center rounded-lg border border-red-400/20 bg-red-400/10 text-red-300 transition hover:bg-red-400/20"
                         type="button"
-                        onClick={() => actions.removeClient(client.id)}
+                        onClick={() => removeClient(client)}
                       >
                         <Trash2 size={17} />
                       </button>
@@ -645,7 +657,14 @@ export function ClientsPage() {
                   </div>
                 </article>
               );
-            })}
+            }) : (
+              <EmptyState
+                description="Use o cadastro guiado ou um modelo de nicho. O contato já nasce com serviço, origem, temperatura e próxima ação."
+                icon={UserRoundPlus}
+                label="Carteira"
+                title="Nenhum contato neste filtro"
+              />
+            )}
           </div>
         </Surface>
       </section>

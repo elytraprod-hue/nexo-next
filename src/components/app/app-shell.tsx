@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff,
   FileText,
+  ShieldCheck,
   Home,
   Lock,
   MessageSquareReply,
@@ -27,6 +28,7 @@ import { AuthStatus } from "@/components/app/auth-status";
 import { useWorkspaceState } from "@/hooks/use-workspace-state";
 import { cn } from "@/lib/utils/cn";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { canAccessAdmin } from "@/lib/auth/roles";
 
 const navigation = [
   { href: "/dashboard", label: "Hoje", icon: Home },
@@ -57,7 +59,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
   const [bootVisible, setBootVisible] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [intelHidden, setIntelHidden] = useState(false);
-  const { state, metrics, ready, user, syncStatus, syncMessage, actions } = useWorkspaceState();
+  const { state, metrics, ready, user, syncStatus, syncMessage, actions, workspaceMemberStatus, workspaceRole } = useWorkspaceState();
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -144,6 +146,9 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
         }
       : null,
   ].filter(Boolean) as { id: string; label: string; href: string; color: string }[];
+  const navigationItems = canAccessAdmin(workspaceRole, workspaceMemberStatus)
+    ? [...navigation, { href: "/admin", label: "Admin", icon: ShieldCheck }]
+    : navigation;
 
   return (
     <main className="app-bg min-h-screen text-zinc-100">
@@ -202,7 +207,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-2">
             <p className="px-2 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Acesso rápido</p>
             <nav className="mt-3 grid gap-1">
-              {navigation.map((item) => {
+              {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
 
@@ -280,7 +285,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </div>
 
             <nav className="mt-3 flex gap-2 overflow-x-auto md:hidden">
-              {navigation.map((item) => {
+              {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
 

@@ -33,6 +33,7 @@ import {
   updateWorkspaceMemberStatus as updateCloudWorkspaceMemberStatus,
   type WorkspaceMemberRecord,
 } from "@/services/workspace-service";
+import { logActivity } from "@/services/operations-service";
 
 const STORAGE_KEY = "nexo-next-workspace-state";
 
@@ -63,6 +64,16 @@ function useWorkspaceStateModel() {
   const [syncStatus, setSyncStatus] = useState<"local" | "loading" | "cloud" | "error">("local");
   const [syncMessage, setSyncMessage] = useState("");
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+
+  const logWorkspaceActivity = useCallback(
+    (input: Parameters<typeof logActivity>[1]) => {
+      if (!supabase || !workspaceId) return;
+      logActivity(supabase, input).catch((error) => {
+        console.error(error);
+      });
+    },
+    [supabase, workspaceId],
+  );
 
   const hydrateCloud = useCallback(async (nextSession: Session | null) => {
     setSession(nextSession);
@@ -179,6 +190,14 @@ function useWorkspaceStateModel() {
             setSyncStatus("error");
             setSyncMessage("Não foi possível salvar cliente no Supabase.");
           });
+          logWorkspaceActivity({
+            action: "created",
+            entityId: client.id,
+            entityType: "client",
+            metadata: { relationshipType: client.relationshipType, service: client.service },
+            title: `Cliente criado: ${client.name}`,
+            workspaceId,
+          });
         }
         return client;
       },
@@ -208,6 +227,13 @@ function useWorkspaceStateModel() {
             setSyncStatus("error");
             setSyncMessage("Não foi possível excluir cliente no Supabase.");
           });
+          logWorkspaceActivity({
+            action: "deleted",
+            entityId: clientId,
+            entityType: "client",
+            title: "Cliente excluído",
+            workspaceId,
+          });
         }
       },
       addProject(input: { clientId: string; presetId: string; title?: string; deadline?: string; budget?: number }) {
@@ -218,6 +244,14 @@ function useWorkspaceStateModel() {
             console.error(error);
             setSyncStatus("error");
             setSyncMessage("Não foi possível salvar projeto no Supabase.");
+          });
+          logWorkspaceActivity({
+            action: "created",
+            entityId: project.id,
+            entityType: "project",
+            metadata: { presetId: project.presetId, deadline: project.deadline, budget: project.budget },
+            title: `Projeto criado: ${project.title}`,
+            workspaceId,
           });
         }
         return project;
@@ -234,6 +268,13 @@ function useWorkspaceStateModel() {
             console.error(error);
             setSyncStatus("error");
             setSyncMessage("Não foi possível excluir projeto no Supabase.");
+          });
+          logWorkspaceActivity({
+            action: "deleted",
+            entityId: projectId,
+            entityType: "project",
+            title: "Projeto excluído",
+            workspaceId,
           });
         }
       },
@@ -335,6 +376,14 @@ function useWorkspaceStateModel() {
             setSyncStatus("error");
             setSyncMessage("Não foi possível salvar documento no Supabase.");
           });
+          logWorkspaceActivity({
+            action: "generated",
+            entityId: record.id,
+            entityType: "document",
+            metadata: { docType: record.docType, projectId: record.projectId, clientId: record.clientId },
+            title: `Documento gerado: ${record.title}`,
+            workspaceId,
+          });
         }
         return record as StudioDocumentRecord;
       },
@@ -406,7 +455,7 @@ function useWorkspaceStateModel() {
         }
       },
     }),
-    [supabase, workspaceId],
+    [logWorkspaceActivity, supabase, workspaceId],
   );
 
   return {

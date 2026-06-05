@@ -32,6 +32,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
   const [submitting, setSubmitting] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const sortedComments = useMemo(
     () => [...comments].sort((a, b) => Number(a.timestampSeconds ?? 0) - Number(b.timestampSeconds ?? 0)),
@@ -42,6 +43,13 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
     [currentTime, sortedComments],
   );
   const publicUrl = deliverable.publicUrl || (typeof window !== "undefined" ? window.location.href : "");
+
+  useEffect(() => {
+    const savedName = localStorage.getItem("nexo_review_author_name");
+    const savedEmail = localStorage.getItem("nexo_review_author_email");
+    if (savedName) setAuthorName(savedName);
+    if (savedEmail) setAuthorEmail(savedEmail);
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -90,18 +98,29 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
 
     video?.pause();
     setSubmitting(true);
+    setFormError("");
 
-    await onCreateComment({
-      timestampSeconds: seconds,
-      timecode: formatTimecode(seconds),
-      authorName: authorName.trim() || "Cliente",
-      authorEmail: authorEmail.trim(),
-      authorType: "client",
-      content: text,
-    });
+    try {
+      const nextName = authorName.trim() || "Cliente";
+      const nextEmail = authorEmail.trim();
+      localStorage.setItem("nexo_review_author_name", nextName);
+      localStorage.setItem("nexo_review_author_email", nextEmail);
 
-    setContent("");
-    setSubmitting(false);
+      await onCreateComment({
+        timestampSeconds: seconds,
+        timecode: formatTimecode(seconds),
+        authorName: nextName,
+        authorEmail: nextEmail,
+        authorType: "client",
+        content: text,
+      });
+
+      setContent("");
+    } catch {
+      setFormError("Não foi possível enviar agora. Tente novamente em alguns segundos.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function copyPublicLink() {
@@ -221,6 +240,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
               </div>
             </div>
           ) : null}
+          {formError ? <div className="rounded-lg border border-red-400/25 bg-red-400/10 p-3 text-sm font-bold text-red-200">{formError}</div> : null}
           <div className="grid gap-3 xl:grid-cols-[160px_190px_1fr_auto]">
             <input
               className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
@@ -247,7 +267,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
             />
             <Button disabled={submitting || !content.trim()} onClick={handleSubmit}>
               <Send size={17} />
-              Enviar
+              {submitting ? "Enviando" : "Enviar"}
             </Button>
           </div>
         </div>

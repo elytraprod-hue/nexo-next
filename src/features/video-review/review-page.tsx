@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Clock3, Film, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Surface } from "@/components/ui/surface";
 import { ReviewPlayer } from "@/features/video-review/review-player";
 import { createPublicVideoComment, getPublicReviewByToken, updatePublicReviewStatus } from "@/services/review-service";
@@ -44,21 +46,36 @@ type ReviewPageProps = {
 export function ReviewPage({ initialTitle, initialVideoSource = "direct", initialVideoUrl, token }: ReviewPageProps) {
   const [deliverable, setDeliverable] = useState<ReviewDeliverable | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loadState, setLoadState] = useState<"ready" | "demo" | "not_found" | "expired" | "offline">("ready");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let active = true;
 
     async function load() {
       setLoading(true);
-      setError("");
+      setLoadState("ready");
+      setNotice("");
 
       const loaded = await getPublicReviewByToken(token);
       if (!active) return;
 
       if (!loaded) {
-        setDeliverable(fallbackDeliverable(token, initialVideoUrl, initialTitle, initialVideoSource));
-        setError(token === "demo" ? "" : "Supabase ainda não retornou esse token. Mantive uma tela de review funcional para teste local.");
+        if (token === "demo" || initialVideoUrl) {
+          setDeliverable(fallbackDeliverable(token, initialVideoUrl, initialTitle, initialVideoSource));
+          setLoadState("demo");
+          setNotice(token === "demo" ? "" : "Prévia local aberta com o vídeo informado no link.");
+        } else {
+          setDeliverable(null);
+          setLoadState("not_found");
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (loaded.expiresAt && new Date(loaded.expiresAt).getTime() < Date.now()) {
+        setDeliverable(null);
+        setLoadState("expired");
         setLoading(false);
         return;
       }
@@ -69,8 +86,14 @@ export function ReviewPage({ initialTitle, initialVideoSource = "direct", initia
 
     load().catch(() => {
       if (!active) return;
-      setDeliverable(fallbackDeliverable(token, initialVideoUrl, initialTitle, initialVideoSource));
-      setError("Não foi possível carregar o review agora.");
+      if (token === "demo" || initialVideoUrl) {
+        setDeliverable(fallbackDeliverable(token, initialVideoUrl, initialTitle, initialVideoSource));
+        setLoadState("demo");
+        setNotice("Modo de prévia aberto enquanto a conexão é restabelecida.");
+      } else {
+        setDeliverable(null);
+        setLoadState("offline");
+      }
       setLoading(false);
     });
 
@@ -105,16 +128,22 @@ export function ReviewPage({ initialTitle, initialVideoSource = "direct", initia
       content: comment.content,
     });
 
-    if (saved) {
-      setDeliverable((current) =>
-        current
-          ? {
-              ...current,
-              comments: (current.comments ?? []).map((item) => (item.id === optimistic.id ? saved : item)),
-            }
-          : current,
-      );
-    }
+    setDeliverable((current) => {
+      if (!current) return current;
+      if (!saved) {
+        return {
+          ...current,
+          comments: (current.comments ?? []).map((item) =>
+            item.id === optimistic.id ? { ...item, content: `${item.content} (não sincronizado)` } : item,
+          ),
+        };
+      }
+
+      return {
+        ...current,
+        comments: (current.comments ?? []).map((item) => (item.id === optimistic.id ? saved : item)),
+      };
+    });
   }
 
   async function handleStatus(status: ReviewStatus) {
@@ -137,13 +166,41 @@ export function ReviewPage({ initialTitle, initialVideoSource = "direct", initia
           <Badge color="var(--orange)">Review público</Badge>
         </header>
 
-        {error ? <div className="rounded-2xl border border-orange-400/25 bg-orange-400/10 px-4 py-3 text-sm text-orange-100">{error}</div> : null}
+        {notice ? <div className="rounded-2xl border border-orange-400/25 bg-orange-400/10 px-4 py-3 text-sm font-bold text-orange-100">{notice}</div> : null}
 
         <Surface className="p-3 sm:p-4">
-          {loading || !deliverable ? (
-            <div className="grid min-h-[520px] place-items-center text-zinc-400">Carregando review...</div>
-          ) : (
+          {loading ? (
+            <div className="grid min-h-[520px] place-items-center text-center text-zinc-400">
+              <div>
+                <RefreshCw className="mx-auto animate-spin text-orange-300" size={34} />
+                <p className="mt-4 text-sm font-black uppercase tracking-[0.18em]">Carregando review</p>
+                <p className="mt-2 text-sm font-bold text-zinc-500">Abrindo vídeo, comentários e status de aprovação.</p>
+              </div>
+            </div>
+          ) : deliverable ? (
             <ReviewPlayer deliverable={deliverable} comments={comments} onCreateComment={handleComment} onStatusChange={handleStatus} />
+          ) : loadState === "expired" ? (
+            <EmptyState
+              description="Este link de aprovação passou do prazo definido pela produtora. Peça um novo link para continuar a revisão."
+              icon={Clock3}
+              label="Link expirado"
+              title="A revisão não está mais disponível"
+            />
+          ) : loadState === "offline" ? (
+            <EmptyState
+              action={<Button onClick={() => window.location.reload()}>Tentar novamente</Button>}
+              description="Não conseguimos acessar os dados deste review agora. A página pode ser recarregada sem perder o contexto do link."
+              icon={AlertTriangle}
+              label="Conexão"
+              title="Não foi possível carregar o review"
+            />
+          ) : (
+            <EmptyState
+              description="Confira se o link foi copiado completo. Se o problema continuar, solicite um novo link de aprovação para a produtora."
+              icon={Film}
+              label="Review público"
+              title="Link de review não encontrado"
+            />
           )}
         </Surface>
       </div>
