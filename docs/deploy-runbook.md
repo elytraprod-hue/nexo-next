@@ -35,7 +35,7 @@ npx supabase status
 Se precisar linkar:
 
 ```bash
-npx supabase link --project-ref diygpiqgcwzhatfxlmkx
+npx supabase link --project-ref <seu-project-ref>
 ```
 
 Depois aplique as migrations:

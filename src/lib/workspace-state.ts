@@ -10,10 +10,16 @@ import {
 export type ClientRecord = {
   id: string;
   name: string;
+  personType: "pessoa_fisica" | "empresa";
   company?: string;
+  documentNumber?: string;
   email?: string;
   phone?: string;
   whatsapp?: string;
+  instagram?: string;
+  siteUrl?: string;
+  address?: string;
+  primaryContact?: string;
   role?: string;
   leadSource?: string;
   referral?: string;
@@ -23,8 +29,11 @@ export type ClientRecord = {
   estimatedBudget?: number;
   assignedTo?: string;
   contactHistory: string[];
+  communicationHistory: string[];
+  fileLinks: string[];
+  tags: string[];
   relationshipType: RelationshipType;
-  status: "lead" | "ativo" | "pausado";
+  status: "lead" | "ativo" | "inativo" | "arquivado" | "pausado";
   leadTemp: "frio" | "morno" | "quente";
   payment: "pendente" | "parcial" | "ok";
   service: string;
@@ -62,12 +71,20 @@ export type ProjectRecord = {
   presetId: string;
   type: string;
   status: "briefing" | "producao" | "review" | "entregue";
+  briefing?: string;
+  references: string[];
+  shootDate?: string;
   deadline: string;
+  deliveryDate: string;
   budget: number;
+  crew: string[];
+  priority: "baixa" | "normal" | "alta" | "urgente";
   link?: string;
+  links: string[];
   pipeline: Record<PipelineKey, boolean>;
   checklist: { text: string; done: boolean }[];
   deliverables: { text: string; done: boolean }[];
+  approvals: { label: string; status: "pendente" | "aprovado" | "ajuste"; createdAt: string }[];
   createdAt: string;
 };
 
@@ -147,11 +164,19 @@ export function buildProject(input: {
   clientId: string;
   presetId: string;
   title?: string;
+  briefing?: string;
+  references?: string[];
+  shootDate?: string;
   deadline?: string;
+  deliveryDate?: string;
   budget?: number;
+  crew?: string[];
+  priority?: ProjectRecord["priority"];
+  links?: string[];
   createdAt?: string;
 }): ProjectRecord {
   const preset = presetById(input.presetId);
+  const deliveryDate = input.deliveryDate || input.deadline || addDaysInput(14);
 
   return {
     id: input.id ?? createId("project"),
@@ -160,11 +185,19 @@ export function buildProject(input: {
     presetId: preset.id,
     type: preset.type,
     status: "briefing",
-    deadline: input.deadline || addDaysInput(14),
+    briefing: input.briefing?.trim() || preset.defaultBriefing.objective,
+    references: input.references ?? [],
+    shootDate: input.shootDate || undefined,
+    deadline: deliveryDate,
+    deliveryDate,
     budget: input.budget ?? preset.value,
+    crew: input.crew ?? [],
+    priority: input.priority ?? "normal",
+    links: input.links ?? [],
     pipeline: pipelineInitialState(["briefing"]),
     checklist: preset.checklist.map((text) => ({ text, done: false })),
     deliverables: preset.deliverables.map((text) => ({ text, done: false })),
+    approvals: [],
     createdAt: input.createdAt ?? new Date().toISOString(),
   };
 }
@@ -172,10 +205,16 @@ export function buildProject(input: {
 export function buildClient(input: {
   id?: string;
   name: string;
+  personType?: ClientRecord["personType"];
   company?: string;
+  documentNumber?: string;
   email?: string;
   phone?: string;
   whatsapp?: string;
+  instagram?: string;
+  siteUrl?: string;
+  address?: string;
+  primaryContact?: string;
   role?: string;
   leadSource?: string;
   referral?: string;
@@ -189,6 +228,9 @@ export function buildClient(input: {
   assignedTo?: string;
   notes?: string;
   contactHistory?: string[];
+  communicationHistory?: string[];
+  fileLinks?: string[];
+  tags?: string[];
   relationshipType: RelationshipType;
   presetId: string;
   playbookId?: string;
@@ -203,10 +245,16 @@ export function buildClient(input: {
   return {
     id: input.id ?? createId("client"),
     name: input.name.trim() || playbook?.niche || "Novo cliente",
+    personType: input.personType ?? (input.company ? "empresa" : "pessoa_fisica"),
     company: input.company?.trim() || playbook?.niche,
+    documentNumber: input.documentNumber?.trim() || undefined,
     email: input.email?.trim() || undefined,
     phone: input.phone?.trim() || undefined,
     whatsapp: input.whatsapp?.trim() || input.phone?.trim() || undefined,
+    instagram: input.instagram?.trim() || undefined,
+    siteUrl: input.siteUrl?.trim() || undefined,
+    address: input.address?.trim() || undefined,
+    primaryContact: input.primaryContact?.trim() || input.name.trim() || undefined,
     role: input.role?.trim() || undefined,
     leadSource: input.leadSource?.trim() || "Indicação",
     referral: input.referral?.trim() || undefined,
@@ -216,6 +264,9 @@ export function buildClient(input: {
     estimatedBudget: input.estimatedBudget ?? value,
     assignedTo: input.assignedTo?.trim() || "Eu",
     contactHistory: input.contactHistory?.filter(Boolean) ?? [],
+    communicationHistory: input.communicationHistory?.filter(Boolean) ?? [],
+    fileLinks: input.fileLinks?.filter(Boolean) ?? [],
+    tags: input.tags?.filter(Boolean) ?? [],
     relationshipType,
     status: input.status ?? (relationshipType === "freelancer" ? "ativo" : "lead"),
     leadTemp: input.leadTemp ?? (relationshipType === "recorrente" ? "quente" : "morno"),
@@ -239,7 +290,9 @@ export function normalizeBusinessProfile(profile?: Partial<BusinessProfile>): Bu
 export function normalizeClient(client: ClientRecord): ClientRecord {
   return {
     ...client,
+    personType: client.personType ?? (client.company ? "empresa" : "pessoa_fisica"),
     whatsapp: client.whatsapp ?? client.phone,
+    primaryContact: client.primaryContact ?? client.name,
     leadSource: client.leadSource ?? "Indicação",
     acquisitionChannel: client.acquisitionChannel ?? "WhatsApp",
     contactReason: client.contactReason ?? client.notes ?? "Contato comercial",
@@ -247,6 +300,22 @@ export function normalizeClient(client: ClientRecord): ClientRecord {
     estimatedBudget: client.estimatedBudget ?? client.monthlyValue ?? client.value,
     assignedTo: client.assignedTo ?? "Eu",
     contactHistory: client.contactHistory ?? [],
+    communicationHistory: client.communicationHistory ?? client.contactHistory ?? [],
+    fileLinks: client.fileLinks ?? [],
+    tags: client.tags ?? [],
+  };
+}
+
+export function normalizeProject(project: ProjectRecord): ProjectRecord {
+  return {
+    ...project,
+    briefing: project.briefing ?? "",
+    references: project.references ?? [],
+    deliveryDate: project.deliveryDate ?? project.deadline,
+    crew: project.crew ?? [],
+    priority: project.priority ?? "normal",
+    links: project.links ?? (project.link ? [project.link] : []),
+    approvals: project.approvals ?? [],
   };
 }
 
@@ -254,7 +323,7 @@ export function normalizeWorkspaceState(state: Partial<WorkspaceState> | undefin
   return {
     businessProfile: normalizeBusinessProfile(state?.businessProfile),
     clients: (state?.clients ?? INITIAL_WORKSPACE_STATE.clients).map(normalizeClient),
-    projects: state?.projects ?? INITIAL_WORKSPACE_STATE.projects,
+    projects: (state?.projects ?? INITIAL_WORKSPACE_STATE.projects).map(normalizeProject),
     documents: state?.documents ?? INITIAL_WORKSPACE_STATE.documents,
     financeEntries: state?.financeEntries ?? INITIAL_WORKSPACE_STATE.financeEntries,
     privacyMode: Boolean(state?.privacyMode),

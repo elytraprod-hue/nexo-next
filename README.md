@@ -1,29 +1,46 @@
-# NEXO Central Next
+# NEXO Studio OS
 
-Nova base do NEXO Central em Next.js + TypeScript, criada em repositório separado para não sobrescrever o projeto atual.
+Sistema operacional para produtoras audiovisuais, filmmakers, fotógrafos, editores e equipes criativas centralizarem clientes, projetos, documentos, aprovações, financeiro, arquivos e operação.
+
+O objetivo do NEXO é reduzir improviso operacional sem transformar uma produtora em um painel administrativo genérico.
+
+## Produto
+
+O NEXO organiza a rotina criativa em módulos conectados:
+
+- Dashboard operacional com prioridades do dia.
+- CRM para clientes, leads, recorrentes, parcerias e freelancers.
+- Projetos audiovisuais com briefing, pipeline, checklist, equipe, prazos e referências.
+- Studio Docs para briefing, proposta, contrato, recibo, callsheet e checklist.
+- Review de vídeo com link público, comentários por timestamp e status de aprovação.
+- Financeiro simples para recebíveis, pagos, custos e previsibilidade.
+- Configurações da produtora para alimentar documentos e PDFs.
+- Admin com permissões de workspace.
 
 ## Stack
 
 - Next.js App Router
 - TypeScript
-- Tailwind CSS v3
-- Supabase SDK
-- hls.js para player HLS/adaptive bitrate
-- zod + react-hook-form preparados para formulários guiados
+- React
+- Tailwind CSS
+- Supabase Auth, Postgres, Storage e RLS
+- hls.js para suporte a player HLS
 
 ## Estrutura
 
-- `src/app`: rotas do App Router
-- `src/components`: componentes compartilhados de UI
-- `src/features`: módulos do produto
-- `src/lib`: constantes, Supabase e utilitários
-- `src/services`: acesso a dados
-- `src/types`: tipos de domínio
-- `supabase/migrations`: migrations do banco
-- `docs/product-principles.md`: princípios de decisão do produto
-- `docs/deploy-runbook.md`: rotina segura de verificação, banco e deploy
+```txt
+src/app            Rotas do App Router
+src/components     Shell, UI e componentes compartilhados
+src/features       Módulos do produto
+src/hooks          Estado e integrações de workspace
+src/lib            Constantes, utilitários e clientes SDK
+src/services       Camada de acesso a dados
+src/types          Tipos de domínio
+supabase/migrations Migrations versionadas do banco
+docs               Runbooks, auditorias e princípios de produto
+```
 
-## Rodar localmente
+## Rodar Localmente
 
 ```bash
 npm install
@@ -31,85 +48,83 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Abra `http://localhost:3000`.
+Abra:
 
-## Supabase
+```bash
+http://localhost:3000
+```
 
-Configure as variáveis abaixo na Vercel e no `.env.local`:
+## Variáveis De Ambiente
+
+Crie `.env.local` localmente e configure as variáveis públicas do Supabase do seu próprio projeto:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-# ou, nos projetos novos do Supabase:
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
-Depois aplique a migration:
+Nunca commite `.env`, `.env.local`, `.env.vercel.local`, tokens, project refs privados ou strings de conexão.
+
+## Banco De Dados
+
+As migrations ficam em:
+
+```bash
+supabase/migrations
+```
+
+Para aplicar no projeto Supabase linkado:
 
 ```bash
 npm run db:push
 ```
 
-## Review de vídeo
+Regras:
 
-A área interna fica em:
+- Não edite migrations antigas já aplicadas.
+- Toda mudança de banco deve entrar como nova migration.
+- RLS e RPCs públicas devem ser revisadas antes de produção.
 
-```bash
-/review
-```
+## Qualidade
 
-Ela permite criar review por URL/CDN, Google Drive ou upload real para Supabase Storage no bucket `review-videos`.
-
-A rota pública fica em:
-
-```bash
-/review/[token]
-```
-
-Também há compatibilidade inicial com links antigos do tipo:
-
-```bash
-/?review=TOKEN
-```
-
-Esse link redireciona para `/review/TOKEN`.
-
-Para upload real, aplique as migrations de storage e segurança pública do Review. A migration `20260604_review_storage_upload.sql` cria o bucket `review-videos` e limita upload/edição aos membros do workspace, enquanto as RPCs públicas usam token em vez de abrir tabelas diretamente para `anon`.
-
-## Qualidade e deploy
-
-Antes de subir:
+Antes de commit/deploy:
 
 ```bash
 npm run verify
 ```
 
-Deploy completo:
+Esse comando roda:
+
+- lint;
+- typecheck;
+- smoke test;
+- build de produção.
+
+## Deploy
+
+Deploy de produção:
 
 ```bash
 npm run deploy:prod
 ```
 
-Runbook detalhado:
+Ou em etapas:
 
 ```bash
-docs/deploy-runbook.md
-```
-
-## Deploy
-
-```bash
-npm run lint
-npm run typecheck
-npm run test:smoke
-npm run build
+npm run verify
+npm run db:push
 npx vercel --prod
 ```
 
-Antes de produção real, valide:
+## Segurança
 
-- variáveis de ambiente do Supabase
-- policies de RLS
-- criação do primeiro workspace
-- upload no Supabase Storage
-- transcodificação HLS via Mux, Bunny Stream, Cloudflare Stream ou outro CDN para vídeos pesados
+- Dados internos são protegidos por autenticação e permissões de workspace.
+- Links públicos de review usam token e RPCs controladas.
+- Tabelas sensíveis usam RLS.
+- Arquivos de ambiente e credenciais não devem ser versionados.
+- Revise `docs/deploy-runbook.md` antes de releases importantes.
+
+## Status
+
+Este projeto está em evolução ativa. A prioridade atual é transformar a base em um SaaS funcional para operação audiovisual real, com fluxos completos de clientes, projetos, propostas, review, documentos, financeiro e área do cliente.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, CalendarDays, CheckCircle2, Clapperboard, FileText, LayoutGrid, ListChecks, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckCircle2, Clapperboard, ExternalLink, FileText, LayoutGrid, ListChecks, Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,13 @@ export function ProjectsPage() {
   const [clientId, setClientId] = useState(state.clients[0]?.id ?? "");
   const [presetId, setPresetId] = useState("institucional");
   const [title, setTitle] = useState("");
+  const [briefing, setBriefing] = useState("");
+  const [referencesText, setReferencesText] = useState("");
+  const [shootDate, setShootDate] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [crewText, setCrewText] = useState("");
+  const [priority, setPriority] = useState<ProjectRecord["priority"]>("normal");
+  const [linksText, setLinksText] = useState("");
   const [view, setView] = useState<"lista" | "kanban">("lista");
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
   const [stagePrompt, setStagePrompt] = useState<StagePrompt>(null);
@@ -48,6 +54,13 @@ export function ProjectsPage() {
     [state.projects],
   );
 
+  function splitList(value: string) {
+    return value
+      .split(/[,;\n]/g)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
   function addProject() {
     if (!canCreateProject) return;
     const fallbackClient = clientId || state.clients[0]?.id;
@@ -56,10 +69,23 @@ export function ProjectsPage() {
       clientId: fallbackClient,
       presetId,
       title,
+      briefing,
+      references: splitList(referencesText),
+      shootDate,
       deadline: deadline || addDaysInput(14),
+      deliveryDate: deadline || addDaysInput(14),
       budget: selectedPreset.value,
+      crew: splitList(crewText),
+      priority,
+      links: splitList(linksText),
     });
     setTitle("");
+    setBriefing("");
+    setReferencesText("");
+    setShootDate("");
+    setCrewText("");
+    setPriority("normal");
+    setLinksText("");
     setExpandedProjectId(project.id);
     setStagePrompt({ projectId: project.id, docType: "briefing", label: "Briefing" });
     setLastDocumentTitle("");
@@ -91,7 +117,13 @@ export function ProjectsPage() {
         fase: prompt.label,
         cliente: getClientName(state, project.clientId),
         projeto: project.title,
-        prazo: project.deadline,
+        briefing: project.briefing || "Briefing ainda não detalhado",
+        gravacao: project.shootDate || "Data de gravação não definida",
+        prazo: project.deliveryDate || project.deadline,
+        prioridade: project.priority,
+        equipe: project.crew.join(", ") || "Equipe ainda não definida",
+        referencias: project.references.join("\n") || "Sem referências vinculadas",
+        links: project.links.join("\n") || "Sem links vinculados",
         proximoPasso: `Validar ${prompt.label.toLowerCase()} e liberar próxima etapa do pipeline.`,
       },
     });
@@ -123,9 +155,12 @@ export function ProjectsPage() {
           <div className="min-w-0">
             <div className="flex flex-wrap gap-2">
               <Badge color="var(--violet)">{project.type}</Badge>
+              <Badge color={project.priority === "urgente" ? "#ef4444" : project.priority === "alta" ? "var(--orange)" : "var(--cyan)"}>
+                {project.priority}
+              </Badge>
               <Badge color="#facc15">
                 <CalendarDays size={13} />
-                {formatDate(project.deadline)}
+                {formatDate(project.deliveryDate || project.deadline)}
               </Badge>
               <Badge color="var(--green)">
                 {done}/{PRODUCTION_PIPELINE.length} etapas
@@ -133,6 +168,7 @@ export function ProjectsPage() {
             </div>
             <h3 className="mt-3 break-words text-xl font-black">{project.title}</h3>
             <p className="mt-1 text-sm text-zinc-500">{getClientName(state, project.clientId)}</p>
+            {project.briefing ? <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-zinc-400">{project.briefing}</p> : null}
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
@@ -195,21 +231,67 @@ export function ProjectsPage() {
         </div>
 
         {expanded ? (
-          <div className="mt-4 grid gap-2 md:grid-cols-2">
-            {project.checklist.map((item, index) => (
-              <button
-                key={`${project.id}-${item.text}`}
-                className={`focus-ring flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition ${
-                  item.done ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200" : "border-white/10 bg-white/[0.035] text-zinc-400"
-                }`}
-                type="button"
-                disabled={!ready}
-                onClick={() => actions.toggleChecklist(project.id, index)}
-              >
-                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-current text-xs">{item.done ? "✓" : ""}</span>
-                {item.text}
-              </button>
-            ))}
+          <div className="mt-4 grid gap-4">
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                ["Gravação", project.shootDate ? formatDate(project.shootDate) : "Não definida"],
+                ["Entrega", formatDate(project.deliveryDate || project.deadline)],
+                ["Equipe", project.crew.length ? project.crew.join(", ") : "Não definida"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{label}</p>
+                  <p className="mt-1 text-sm font-bold leading-6 text-zinc-300">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {project.references.length || project.links.length ? (
+              <div className="grid gap-3 md:grid-cols-2">
+                {project.references.length ? (
+                  <div className="rounded-lg border border-cyan-300/15 bg-cyan-300/[0.06] p-3">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-300">Referências</p>
+                    <div className="mt-2 grid gap-2">
+                      {project.references.map((reference) => (
+                        <a key={reference} className="inline-flex items-center gap-2 break-all text-sm font-bold leading-6 text-cyan-100" href={reference} rel="noopener noreferrer" target="_blank">
+                          <ExternalLink size={14} />
+                          {reference}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {project.links.length ? (
+                  <div className="rounded-lg border border-violet-300/15 bg-violet-300/[0.06] p-3">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">Links e arquivos</p>
+                    <div className="mt-2 grid gap-2">
+                      {project.links.map((link) => (
+                        <a key={link} className="inline-flex items-center gap-2 break-all text-sm font-bold leading-6 text-violet-100" href={link} rel="noopener noreferrer" target="_blank">
+                          <ExternalLink size={14} />
+                          {link}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="grid gap-2 md:grid-cols-2">
+              {project.checklist.map((item, index) => (
+                <button
+                  key={`${project.id}-${item.text}`}
+                  className={`focus-ring flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition ${
+                    item.done ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200" : "border-white/10 bg-white/[0.035] text-zinc-400"
+                  }`}
+                  type="button"
+                  disabled={!ready}
+                  onClick={() => actions.toggleChecklist(project.id, index)}
+                >
+                  <span className="grid size-6 shrink-0 place-items-center rounded-full border border-current text-xs">{item.done ? "✓" : ""}</span>
+                  {item.text}
+                </button>
+              ))}
+            </div>
           </div>
         ) : null}
       </article>
@@ -252,6 +334,13 @@ export function ProjectsPage() {
                 onChange={(event) => setTitle(event.target.value)}
               />
 
+              <textarea
+                className="focus-ring min-h-28 rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold leading-6 text-white placeholder:text-zinc-600"
+                placeholder={selectedPreset.defaultBriefing.objective}
+                value={briefing}
+                onChange={(event) => setBriefing(event.target.value)}
+              />
+
               <div className="grid gap-2 sm:grid-cols-2">
                 {AUDIOVISUAL_PRESETS.map((preset) => (
                   <button
@@ -289,13 +378,69 @@ export function ProjectsPage() {
                 ))}
               </div>
 
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Gravação
+                  <input
+                    className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                    type="date"
+                    value={shootDate}
+                    onChange={(event) => setShootDate(event.target.value)}
+                  />
+                </label>
+                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Entrega prevista
+                  <input
+                    className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                    type="date"
+                    value={deadline}
+                    onChange={(event) => setDeadline(event.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Prioridade
+                  <select
+                    className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                    value={priority}
+                    onChange={(event) => setPriority(event.target.value as ProjectRecord["priority"])}
+                  >
+                    <option value="baixa">Baixa</option>
+                    <option value="normal">Normal</option>
+                    <option value="alta">Alta</option>
+                    <option value="urgente">Urgente</option>
+                  </select>
+                </label>
+                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Equipe
+                  <input
+                    className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white placeholder:text-zinc-600"
+                    placeholder="Direção, câmera, editor..."
+                    value={crewText}
+                    onChange={(event) => setCrewText(event.target.value)}
+                  />
+                </label>
+              </div>
+
               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
-                Entrega prevista
-                <input
-                  className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
-                  type="date"
-                  value={deadline}
-                  onChange={(event) => setDeadline(event.target.value)}
+                Referências
+                <textarea
+                  className="focus-ring min-h-24 rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold normal-case leading-6 tracking-normal text-white placeholder:text-zinc-600"
+                  placeholder="Links, estilos, vídeos de referência. Um por linha."
+                  value={referencesText}
+                  onChange={(event) => setReferencesText(event.target.value)}
+                />
+              </label>
+
+              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                Links e arquivos
+                <textarea
+                  className="focus-ring min-h-24 rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold normal-case leading-6 tracking-normal text-white placeholder:text-zinc-600"
+                  placeholder="Pasta do projeto, Drive, roteiro, assets, contrato. Um por linha."
+                  value={linksText}
+                  onChange={(event) => setLinksText(event.target.value)}
                 />
               </label>
 

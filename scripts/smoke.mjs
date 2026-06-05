@@ -16,6 +16,7 @@ const requiredFiles = [
   "supabase/migrations/20260605_review_public_rpc_security.sql",
   "supabase/migrations/20260606_workspace_member_status.sql",
   "supabase/migrations/20260607_operational_backend_foundation.sql",
+  "supabase/migrations/20260608_client_project_completeness.sql",
   "src/services/operations-service.ts",
   "src/types/operations.ts",
 ];
@@ -34,6 +35,10 @@ const requiredContents = [
   ["supabase/migrations/20260607_operational_backend_foundation.sql", "create table if not exists public.activity_log"],
   ["supabase/migrations/20260607_operational_backend_foundation.sql", "create table if not exists public.tasks"],
   ["supabase/migrations/20260607_operational_backend_foundation.sql", "public.log_activity"],
+  ["supabase/migrations/20260608_client_project_completeness.sql", "alter table public.clients add column if not exists person_type"],
+  ["supabase/migrations/20260608_client_project_completeness.sql", "reference_links"],
+  ["src/lib/workspace-state.ts", "personType"],
+  ["src/features/clients/clients-page.tsx", "CPF/CNPJ"],
 ];
 
 const failures = [];

@@ -40,6 +40,8 @@ const attentionOwners = ["Eu", "Produtor responsável", "Sócio comercial", "Ate
 const statusLabels: Record<ClientRecord["status"], string> = {
   lead: "Em conversa",
   ativo: "Ativo",
+  inativo: "Inativo",
+  arquivado: "Arquivado",
   pausado: "Pausado",
 };
 const stepMeta = [
@@ -53,11 +55,17 @@ type StepId = (typeof stepMeta)[number]["id"];
 
 type ClientDraft = {
   name: string;
+  personType: ClientRecord["personType"];
   company: string;
+  documentNumber: string;
   role: string;
   email: string;
   phone: string;
   whatsapp: string;
+  instagram: string;
+  siteUrl: string;
+  address: string;
+  primaryContact: string;
   leadSource: string;
   referral: string;
   acquisitionChannel: string;
@@ -66,17 +74,26 @@ type ClientDraft = {
   assignedTo: string;
   status: ClientRecord["status"];
   leadTemp: ClientRecord["leadTemp"];
+  tags: string;
   notes: string;
   contactHistory: string;
+  communicationHistory: string;
+  fileLinks: string;
 };
 
 const initialDraft: ClientDraft = {
   name: "",
+  personType: "empresa",
   company: "",
+  documentNumber: "",
   role: "",
   email: "",
   phone: "",
   whatsapp: "",
+  instagram: "",
+  siteUrl: "",
+  address: "",
+  primaryContact: "",
   leadSource: "Indicação",
   referral: "",
   acquisitionChannel: "WhatsApp",
@@ -85,14 +102,47 @@ const initialDraft: ClientDraft = {
   assignedTo: "Eu",
   status: "lead",
   leadTemp: "morno",
+  tags: "",
   notes: "",
   contactHistory: "",
+  communicationHistory: "",
+  fileLinks: "",
 };
 
 function parseMoney(value: string, fallback: number) {
   const normalized = value.replace(/[^\d,.-]/g, "").replace(".", "").replace(",", ".");
   const parsed = Number(normalized);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function splitList(value: string) {
+  return value
+    .split(/[,;\n]/g)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function maskDocument(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  }
+
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+}
+
+function maskPhone(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  return digits
+    .replace(/^(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -141,7 +191,7 @@ export function ClientsPage() {
   const selectedPreset = AUDIOVISUAL_PRESETS.find((preset) => preset.id === presetId) ?? AUDIOVISUAL_PRESETS[1];
   const completedCore = [draft.name, draft.whatsapp || draft.phone || draft.email, draft.leadSource, quickAction].filter(Boolean).length;
   const hasContactPath = Boolean(draft.whatsapp || draft.phone || draft.email);
-  const canCreateClient = ready && Boolean(draft.name.trim()) && hasContactPath;
+  const canCreateClient = ready && Boolean(draft.name.trim()) && hasContactPath && Boolean(draft.primaryContact.trim() || draft.personType === "pessoa_fisica");
 
   function patchDraft(input: Partial<ClientDraft>) {
     setDraft((current) => ({ ...current, ...input }));
@@ -166,6 +216,7 @@ export function ClientsPage() {
     patchDraft({
       status: type === "freelancer" ? "ativo" : "lead",
       leadTemp: type === "recorrente" ? "quente" : "morno",
+      personType: type === "freelancer" ? "pessoa_fisica" : draft.personType,
       contactReason: type === "parceria" ? "Parceria/permutas" : type === "recorrente" ? "Precisa recorrência" : draft.contactReason,
     });
   }
@@ -174,11 +225,17 @@ export function ClientsPage() {
     if (!canCreateClient) return;
     const client = actions.addClient({
       name: draft.name,
+      personType: draft.personType,
       company: draft.company,
+      documentNumber: draft.documentNumber,
       role: draft.role,
       email: draft.email,
       phone: draft.phone,
       whatsapp: draft.whatsapp,
+      instagram: draft.instagram,
+      siteUrl: draft.siteUrl,
+      address: draft.address,
+      primaryContact: draft.primaryContact || draft.name,
       leadSource: draft.leadSource,
       referral: draft.referral,
       acquisitionChannel: draft.acquisitionChannel,
@@ -190,6 +247,9 @@ export function ClientsPage() {
       leadTemp: draft.leadTemp,
       notes: draft.notes,
       contactHistory: draft.contactHistory ? [draft.contactHistory] : [],
+      communicationHistory: splitList(draft.communicationHistory),
+      fileLinks: splitList(draft.fileLinks),
+      tags: splitList(draft.tags),
       relationshipType,
       presetId,
       nextAction: quickAction,
@@ -224,6 +284,8 @@ export function ClientsPage() {
       assignedTo: "Eu",
       notes: playbook.promise,
       contactHistory: [`Modelo aplicado: ${nextAction}`],
+      communicationHistory: [`Modelo aplicado: ${nextAction}`],
+      tags: [playbook.niche, preset.label],
     });
     setLastProjectTitle("");
     setLastCreatedClient(client);
@@ -306,10 +368,28 @@ export function ClientsPage() {
                     ))}
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
+                    <Field label="Tipo">
+                      <select
+                        className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                        value={draft.personType}
+                        onChange={(event) => patchDraft({ personType: event.target.value as ClientRecord["personType"] })}
+                      >
+                        <option value="empresa">Empresa</option>
+                        <option value="pessoa_fisica">Pessoa física</option>
+                      </select>
+                    </Field>
+                    <Field label="CPF/CNPJ">
+                      <input
+                        className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                        placeholder={draft.personType === "empresa" ? "00.000.000/0001-00" : "000.000.000-00"}
+                        value={draft.documentNumber}
+                        onChange={(event) => patchDraft({ documentNumber: maskDocument(event.target.value) })}
+                      />
+                    </Field>
                     <Field label="Nome">
                       <input
                         className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
-                        placeholder="Nome do contato"
+                        placeholder={draft.personType === "empresa" ? "Nome do cliente ou marca" : "Nome completo"}
                         value={draft.name}
                         onChange={(event) => patchDraft({ name: event.target.value })}
                       />
@@ -320,6 +400,14 @@ export function ClientsPage() {
                         placeholder="Marca, produtora ou cliente"
                         value={draft.company}
                         onChange={(event) => patchDraft({ company: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Responsável principal">
+                      <input
+                        className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                        placeholder="Quem aprova, responde ou decide"
+                        value={draft.primaryContact}
+                        onChange={(event) => patchDraft({ primaryContact: event.target.value })}
                       />
                     </Field>
                     <Field label="Papel na decisão">
@@ -353,7 +441,7 @@ export function ClientsPage() {
                         className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
                         placeholder="(00) 00000-0000"
                         value={draft.whatsapp}
-                        onChange={(event) => patchDraft({ whatsapp: event.target.value })}
+                        onChange={(event) => patchDraft({ whatsapp: maskPhone(event.target.value) })}
                       />
                     </Field>
                     <Field label="Telefone">
@@ -361,19 +449,45 @@ export function ClientsPage() {
                         className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
                         placeholder="Telefone alternativo"
                         value={draft.phone}
-                        onChange={(event) => patchDraft({ phone: event.target.value })}
+                        onChange={(event) => patchDraft({ phone: maskPhone(event.target.value) })}
                       />
                     </Field>
                   </div>
-                  <Field label="E-mail">
-                    <input
-                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
-                      placeholder="contato@cliente.com"
-                      type="email"
-                      value={draft.email}
-                      onChange={(event) => patchDraft({ email: event.target.value })}
-                    />
-                  </Field>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <Field label="E-mail">
+                      <input
+                        className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                        placeholder="contato@cliente.com"
+                        type="email"
+                        value={draft.email}
+                        onChange={(event) => patchDraft({ email: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Instagram">
+                      <input
+                        className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                        placeholder="@cliente"
+                        value={draft.instagram}
+                        onChange={(event) => patchDraft({ instagram: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Site/portfólio">
+                      <input
+                        className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                        placeholder="https://..."
+                        value={draft.siteUrl}
+                        onChange={(event) => patchDraft({ siteUrl: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Endereço">
+                      <input
+                        className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                        placeholder="Cidade, UF ou endereço completo"
+                        value={draft.address}
+                        onChange={(event) => patchDraft({ address: event.target.value })}
+                      />
+                    </Field>
+                  </div>
                   <div className="grid gap-2">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Canal de aquisição</p>
                     <ChipGroup options={acquisitionChannels} value={draft.acquisitionChannel} onChange={(value) => patchDraft({ acquisitionChannel: value })} />
@@ -419,12 +533,21 @@ export function ClientsPage() {
                         value={draft.status}
                         onChange={(event) => patchDraft({ status: event.target.value as ClientRecord["status"] })}
                       >
-                        <option value="lead">Em conversa</option>
-                        <option value="ativo">Ativo</option>
-                        <option value="pausado">Pausado</option>
+                        <option value="lead">Lead</option>
+                        <option value="ativo">Cliente ativo</option>
+                        <option value="inativo">Inativo</option>
+                        <option value="arquivado">Arquivado</option>
                       </select>
                     </Field>
                   </div>
+                  <Field label="Tags">
+                    <input
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                      placeholder="Ex: recorrente, clínica, alto ticket"
+                      value={draft.tags}
+                      onChange={(event) => patchDraft({ tags: event.target.value })}
+                    />
+                  </Field>
                   <div className="grid gap-2">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Origem do contato</p>
                     <ChipGroup options={leadSources} value={draft.leadSource} onChange={(value) => patchDraft({ leadSource: value })} />
@@ -459,6 +582,22 @@ export function ClientsPage() {
                       placeholder="Resumo da conversa, reunião ou contexto"
                       value={draft.contactHistory}
                       onChange={(event) => patchDraft({ contactHistory: event.target.value })}
+                    />
+                  </Field>
+                  <Field label="Histórico de comunicação">
+                    <textarea
+                      className="focus-ring min-h-24 rounded-lg border border-white/10 bg-black/20 p-3 text-sm font-bold leading-6 text-white placeholder:text-zinc-600"
+                      placeholder="Cole mensagens, alinhamentos ou follow-ups importantes. Uma linha por evento."
+                      value={draft.communicationHistory}
+                      onChange={(event) => patchDraft({ communicationHistory: event.target.value })}
+                    />
+                  </Field>
+                  <Field label="Arquivos vinculados">
+                    <textarea
+                      className="focus-ring min-h-24 rounded-lg border border-white/10 bg-black/20 p-3 text-sm font-bold leading-6 text-white placeholder:text-zinc-600"
+                      placeholder="Links de Drive, referências, pastas ou arquivos. Um por linha."
+                      value={draft.fileLinks}
+                      onChange={(event) => patchDraft({ fileLinks: event.target.value })}
                     />
                   </Field>
                   <Field label="Observações">
@@ -626,7 +765,13 @@ export function ClientsPage() {
                     <summary className="cursor-pointer text-sm font-black text-zinc-300">Perfil completo</summary>
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
                       {[
+                        ["Tipo", client.personType === "empresa" ? "Empresa" : "Pessoa física"],
+                        ["CPF/CNPJ", client.documentNumber || "Não informado"],
+                        ["Responsável", client.primaryContact || client.name],
                         ["Papel na decisão", client.role || "Não informado"],
+                        ["Instagram", client.instagram || "Não informado"],
+                        ["Site", client.siteUrl || "Não informado"],
+                        ["Endereço", client.address || "Não informado"],
                         ["Canal", client.acquisitionChannel || "Não informado"],
                         ["Motivo", client.contactReason || "Não informado"],
                         ["Serviço desejado", client.desiredService || client.service],
@@ -639,10 +784,37 @@ export function ClientsPage() {
                         </div>
                       ))}
                     </div>
+                    {client.tags.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {client.tags.map((tag) => (
+                          <span key={tag} className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-black text-cyan-200">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                     {client.contactHistory.length ? (
                       <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
-                        <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Histórico</p>
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Histórico comercial</p>
                         <p className="mt-1 text-sm font-bold leading-6 text-zinc-300">{client.contactHistory.join(" · ")}</p>
+                      </div>
+                    ) : null}
+                    {client.communicationHistory.length ? (
+                      <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Comunicação</p>
+                        <p className="mt-1 text-sm font-bold leading-6 text-zinc-300">{client.communicationHistory.join(" · ")}</p>
+                      </div>
+                    ) : null}
+                    {client.fileLinks.length ? (
+                      <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Arquivos vinculados</p>
+                        <div className="mt-2 grid gap-2">
+                          {client.fileLinks.map((link) => (
+                            <a key={link} className="break-all text-sm font-bold leading-6 text-cyan-300 hover:text-cyan-100" href={link} rel="noopener noreferrer" target="_blank">
+                              {link}
+                            </a>
+                          ))}
+                        </div>
                       </div>
                     ) : null}
                   </details>

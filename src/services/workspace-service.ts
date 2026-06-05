@@ -23,9 +23,15 @@ type ClientRow = {
   id: string;
   workspace_id: string;
   name: string;
+  person_type: ClientRecord["personType"] | null;
+  document_number: string | null;
   email: string | null;
   phone: string | null;
   whatsapp: string | null;
+  instagram: string | null;
+  site_url: string | null;
+  address: string | null;
+  primary_contact: string | null;
   company: string | null;
   role: string | null;
   lead_source: string | null;
@@ -36,6 +42,9 @@ type ClientRow = {
   estimated_budget: number | null;
   assigned_to: string | null;
   contact_history: string[] | null;
+  communication_history: string[] | null;
+  file_links: string[] | null;
+  tags: string[] | null;
   relationship_type: RelationshipType;
   status: ClientRecord["status"] | null;
   lead_temp: ClientRecord["leadTemp"] | null;
@@ -59,12 +68,20 @@ type ProjectRow = {
   preset_id: string | null;
   type: string | null;
   status: ProjectRecord["status"] | null;
+  briefing: string | null;
+  reference_links: string[] | null;
+  shoot_date: string | null;
   deadline: string | null;
+  delivery_date: string | null;
   budget: number | null;
+  crew: string[] | null;
+  priority: ProjectRecord["priority"] | null;
   link: string | null;
+  links: string[] | null;
   pipeline: ProjectRecord["pipeline"];
   checklist: ProjectRecord["checklist"];
   deliverables: ProjectRecord["deliverables"];
+  approvals: ProjectRecord["approvals"] | null;
   created_at: string;
 };
 
@@ -146,10 +163,16 @@ function mapClient(row: ClientRow): ClientRecord {
   return {
     id: row.id,
     name: row.name,
+    personType: row.person_type ?? "empresa",
     company: row.company ?? undefined,
+    documentNumber: row.document_number ?? undefined,
     email: row.email ?? undefined,
     phone: row.phone ?? undefined,
     whatsapp: row.whatsapp ?? undefined,
+    instagram: row.instagram ?? undefined,
+    siteUrl: row.site_url ?? undefined,
+    address: row.address ?? undefined,
+    primaryContact: row.primary_contact ?? row.name,
     role: row.role ?? undefined,
     leadSource: row.lead_source ?? undefined,
     referral: row.referral ?? undefined,
@@ -159,6 +182,9 @@ function mapClient(row: ClientRow): ClientRecord {
     estimatedBudget: row.estimated_budget ?? undefined,
     assignedTo: row.assigned_to ?? undefined,
     contactHistory: row.contact_history ?? [],
+    communicationHistory: row.communication_history ?? row.contact_history ?? [],
+    fileLinks: row.file_links ?? [],
+    tags: row.tags ?? [],
     relationshipType: row.relationship_type ?? "cliente",
     status: row.status ?? "lead",
     leadTemp: row.lead_temp ?? "morno",
@@ -183,12 +209,20 @@ function mapProject(row: ProjectRow): ProjectRecord {
     presetId: row.preset_id ?? "institucional",
     type: row.type ?? "gravação",
     status: row.status ?? "briefing",
+    briefing: row.briefing ?? undefined,
+    references: row.reference_links ?? [],
+    shootDate: row.shoot_date ?? undefined,
     deadline: row.deadline ?? "",
+    deliveryDate: row.delivery_date ?? row.deadline ?? "",
     budget: Number(row.budget ?? 0),
+    crew: row.crew ?? [],
+    priority: row.priority ?? "normal",
     link: row.link ?? undefined,
+    links: row.links ?? (row.link ? [row.link] : []),
     pipeline: row.pipeline ?? {},
     checklist: row.checklist ?? [],
     deliverables: row.deliverables ?? [],
+    approvals: row.approvals ?? [],
     createdAt: row.created_at,
   };
 }
@@ -364,9 +398,15 @@ export async function insertClient(supabase: SupabaseClient, workspaceId: string
     id: client.id,
     workspace_id: workspaceId,
     name: client.name,
+    person_type: client.personType,
+    document_number: client.documentNumber ?? null,
     email: client.email ?? null,
     phone: client.phone ?? null,
     whatsapp: client.whatsapp ?? null,
+    instagram: client.instagram ?? null,
+    site_url: client.siteUrl ?? null,
+    address: client.address ?? null,
+    primary_contact: client.primaryContact ?? null,
     company: client.company ?? null,
     role: client.role ?? null,
     lead_source: client.leadSource ?? null,
@@ -377,6 +417,9 @@ export async function insertClient(supabase: SupabaseClient, workspaceId: string
     estimated_budget: client.estimatedBudget ?? null,
     assigned_to: client.assignedTo ?? null,
     contact_history: client.contactHistory ?? [],
+    communication_history: client.communicationHistory ?? [],
+    file_links: client.fileLinks ?? [],
+    tags: client.tags ?? [],
     relationship_type: client.relationshipType,
     status: client.status,
     lead_temp: client.leadTemp,
@@ -434,12 +477,20 @@ export async function insertProject(supabase: SupabaseClient, workspaceId: strin
     preset_id: project.presetId,
     type: project.type,
     status: project.status,
+    briefing: project.briefing ?? null,
+    reference_links: project.references ?? [],
+    shoot_date: project.shootDate || null,
     deadline: project.deadline || null,
+    delivery_date: project.deliveryDate || project.deadline || null,
     budget: project.budget,
+    crew: project.crew ?? [],
+    priority: project.priority,
     link: project.link ?? null,
+    links: project.links ?? [],
     pipeline: project.pipeline,
     checklist: project.checklist,
     deliverables: project.deliverables,
+    approvals: project.approvals ?? [],
   });
 
   if (error) throw error;

@@ -236,7 +236,7 @@ function useWorkspaceStateModel() {
           });
         }
       },
-      addProject(input: { clientId: string; presetId: string; title?: string; deadline?: string; budget?: number }) {
+      addProject(input: Parameters<typeof buildProject>[0]) {
         const project = buildProject(input);
         setState((current) => ({ ...current, projects: [project, ...current.projects] }));
         if (supabase && workspaceId) {
