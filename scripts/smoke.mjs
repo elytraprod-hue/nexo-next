@@ -18,6 +18,7 @@ const requiredFiles = [
   "supabase/migrations/20260607_operational_backend_foundation.sql",
   "supabase/migrations/20260608_client_project_completeness.sql",
   "supabase/migrations/20260609_commercial_proposals.sql",
+  "supabase/migrations/20260610_backend_security_hardening.sql",
   "src/services/operations-service.ts",
   "src/types/operations.ts",
 ];
@@ -39,6 +40,9 @@ const requiredContents = [
   ["supabase/migrations/20260608_client_project_completeness.sql", "alter table public.clients add column if not exists person_type"],
   ["supabase/migrations/20260608_client_project_completeness.sql", "reference_links"],
   ["supabase/migrations/20260609_commercial_proposals.sql", "create table if not exists public.commercial_proposals"],
+  ["supabase/migrations/20260610_backend_security_hardening.sql", "public.is_valid_review_token"],
+  ["supabase/migrations/20260610_backend_security_hardening.sql", "revoke select on public.deliverables from anon"],
+  ["supabase/migrations/20260610_backend_security_hardening.sql", "comment content length is invalid"],
   ["src/lib/workspace-state.ts", "CommercialProposal"],
   ["src/hooks/use-workspace-state.tsx", "convertProposalToProject"],
   ["src/features/clients/clients-page.tsx", "Pipeline comercial"],
