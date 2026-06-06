@@ -23,9 +23,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { MetricCard } from "@/components/ui/metric-card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Surface } from "@/components/ui/surface";
-import { OperationsTimeline } from "@/features/dashboard/operations-timeline";
-import { SmartAlerts } from "@/features/dashboard/smart-alerts";
 import { PRODUCTION_PIPELINE } from "@/lib/constants";
+import { buildOperationalCockpit } from "@/lib/operational-engine";
 import { calculateMaturity, getClientName } from "@/lib/workspace-state";
 import { useWorkspaceState } from "@/hooks/use-workspace-state";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -76,6 +75,7 @@ export function Dashboard() {
   const { state, metrics, actions, user, syncStatus } = useWorkspaceState();
   const [showDetails, setShowDetails] = useState(false);
   const maturity = calculateMaturity(state);
+  const cockpit = useMemo(() => buildOperationalCockpit(state), [state]);
   const privacy = state.privacyMode;
   const activeProjects = state.projects.filter((project) => project.status !== "entregue");
   const nextProjects = activeProjects.slice(0, 3);
@@ -116,6 +116,20 @@ export function Dashboard() {
   const displayName = user?.user_metadata?.name || user?.email?.split("@")[0] || "criador";
 
   const primaryAction = useMemo(() => {
+    if (cockpit.nextAction) {
+      return {
+        label: cockpit.nextAction.cta,
+        title: cockpit.nextAction.title,
+        text: cockpit.nextAction.description,
+        href: cockpit.nextAction.href,
+        color:
+          cockpit.nextAction.type === "finance" ? "#facc15" :
+          cockpit.nextAction.type === "review" ? "var(--cyan)" :
+          cockpit.nextAction.type === "project" ? "var(--violet)" :
+          cockpit.nextAction.type === "proposal" ? "var(--green)" :
+          "var(--orange)",
+      };
+    }
     if (openProposals.length) {
       const proposal = openProposals[0];
       return {
@@ -160,7 +174,7 @@ export function Dashboard() {
       href: "/financeiro",
       color: "#facc15",
     };
-  }, [docsMissing, leads.length, nextDeadline, openProposals, state]);
+  }, [cockpit.nextAction, docsMissing, leads.length, nextDeadline, openProposals, state]);
 
   const compactMetrics = [
     { label: "Propostas abertas", value: metrics.openProposals, color: "var(--green)", href: "/clientes" },
@@ -169,10 +183,10 @@ export function Dashboard() {
     { label: "Entregas próximas", value: metrics.projectsNearDelivery, color: "var(--orange)", href: "/projetos" },
   ];
   const commandItems = [
-    { label: "Leads", value: metrics.clientsToAnswer, href: "/clientes", color: "var(--orange)" },
-    { label: "A fechar", value: metrics.proposalsToClose, href: "/clientes", color: "var(--green)" },
-    { label: "Gravações", value: metrics.upcomingShoots, href: "/projetos", color: "var(--violet)" },
-    { label: "Entregas", value: metrics.projectsNearDelivery, href: "/projetos", color: "var(--cyan)" },
+    { label: "Leads", value: cockpit.kpis.leads, href: "/clientes", color: "var(--orange)" },
+    { label: "Propostas", value: cockpit.kpis.proposals, href: "/clientes", color: "var(--green)" },
+    { label: "Reviews", value: cockpit.kpis.reviewsToOpen, href: "/review", color: "var(--cyan)" },
+    { label: "Financeiro", value: cockpit.kpis.financeOpen, href: "/financeiro", color: "#facc15" },
   ];
 
   return (
@@ -395,8 +409,45 @@ export function Dashboard() {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <OperationsTimeline state={state} />
-        <SmartAlerts state={state} />
+        <Surface>
+          <SectionHeading
+            description="O sistema transforma lead, proposta, projeto, documento, review e financeiro em uma fila única de decisão."
+            icon={Target}
+            kicker="Motor operacional"
+            title="Próximas ações"
+          />
+          <div className="mt-5 grid gap-3">
+            {cockpit.actions.slice(0, 6).map((action) => (
+              <Link key={action.id} className="premium-card rounded-xl p-4 transition hover:bg-white/[0.055]" href={action.href}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">{action.type} · {action.priority}</p>
+                    <h3 className="mt-2 font-black">{action.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-zinc-400">{action.description}</p>
+                  </div>
+                  <span className="rounded-lg bg-orange-500 px-3 py-2 text-xs font-black text-black">{action.cta}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Surface>
+        <Surface>
+          <SectionHeading
+            description="Histórico vivo do que está acontecendo na operação."
+            icon={CalendarDays}
+            kicker="Timeline"
+            title="Atividade unificada"
+          />
+          <div className="mt-5 grid max-h-[620px] gap-3 overflow-auto pr-1">
+            {cockpit.timeline.slice(0, 10).map((event) => (
+              <Link key={event.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-4 transition hover:bg-white/[0.06]" href={event.href}>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">{event.type} · {formatDate(event.date)}</p>
+                <h3 className="mt-2 font-black">{event.title}</h3>
+                <p className="mt-1 text-sm text-zinc-500">{event.description}</p>
+              </Link>
+            ))}
+          </div>
+        </Surface>
       </section>
 
       {productionAgenda.length ? (
