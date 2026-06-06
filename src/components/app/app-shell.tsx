@@ -16,6 +16,8 @@ import {
   Home,
   Lock,
   MessageSquareReply,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   Search,
   Settings,
@@ -59,6 +61,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
   const [bootVisible, setBootVisible] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [intelHidden, setIntelHidden] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { state, metrics, ready, user, syncStatus, syncMessage, actions, workspaceMemberStatus, workspaceRole } = useWorkspaceState();
 
   useEffect(() => {
@@ -193,19 +196,54 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
       ) : null}
 
       <div className="mx-auto flex min-h-screen w-full max-w-[1360px] gap-4 px-3 py-3 sm:px-4 lg:px-5">
-        <aside className="hidden w-[236px] shrink-0 flex-col gap-3 rounded-2xl border border-white/10 bg-black/38 p-3 shadow-2xl backdrop-blur-2xl md:flex">
-          <Link href="/dashboard" className="flex items-center gap-3 rounded-xl border border-orange-400/20 bg-orange-500/10 p-3">
+        <aside
+          className={cn(
+            "hidden shrink-0 flex-col gap-3 rounded-2xl border border-white/10 bg-black/38 p-3 shadow-2xl backdrop-blur-2xl transition-[width] duration-300 md:flex",
+            sidebarCollapsed ? "w-[76px]" : "w-[236px]",
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard"
+              className={cn(
+                "flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-orange-400/20 bg-orange-500/10 p-3",
+                sidebarCollapsed ? "justify-center" : "",
+              )}
+              title="NEXO Studio OS"
+            >
             <div className="grid size-11 place-items-center rounded-xl border border-orange-400/40 bg-orange-500 text-xl font-black text-black shadow-[0_0_28px_rgba(255,106,0,0.25)]">
               {state.businessProfile.name.slice(0, 1) || "N"}
             </div>
-            <div className="min-w-0">
+            {!sidebarCollapsed ? <div className="min-w-0">
               <p className="display-font text-xl font-black leading-none">NEXO</p>
               <p className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.16em] text-orange-400">{state.businessProfile.name} OS</p>
-            </div>
-          </Link>
+            </div> : null}
+            </Link>
+            {!sidebarCollapsed ? (
+              <button
+                aria-label="Recolher lateral"
+                className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-zinc-400 transition hover:text-white"
+                type="button"
+                onClick={() => setSidebarCollapsed(true)}
+              >
+                <PanelLeftClose size={18} />
+              </button>
+            ) : null}
+          </div>
+
+          {sidebarCollapsed ? (
+            <button
+              aria-label="Expandir lateral"
+              className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-zinc-400 transition hover:text-white"
+              type="button"
+              onClick={() => setSidebarCollapsed(false)}
+            >
+              <PanelLeftOpen size={18} />
+            </button>
+          ) : null}
 
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-2">
-            <p className="px-2 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Acesso rápido</p>
+            {!sidebarCollapsed ? <p className="px-2 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Acesso rápido</p> : null}
             <nav className="mt-3 grid gap-1">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
@@ -215,15 +253,17 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
                   <Link
                     key={item.href}
                     href={item.href}
+                    title={item.label}
                     className={cn(
-                      "flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-black transition",
+                      "flex min-h-10 items-center rounded-lg text-sm font-black transition",
+                      sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3",
                       active
                         ? "os-left-accent border border-orange-400/30 bg-orange-500/15 text-orange-300 shadow-[0_12px_30px_rgba(255,106,0,0.12)]"
                         : "border border-transparent text-zinc-400 hover:border-white/10 hover:bg-white/[0.07] hover:text-white",
                     )}
                   >
                     <Icon size={18} />
-                    {item.label}
+                    {!sidebarCollapsed ? item.label : null}
                   </Link>
                 );
               })}
@@ -233,32 +273,44 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
           {primaryAction ? (
             <Link
               href={primaryAction.href}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-black text-black transition hover:bg-orange-400"
+              title={primaryAction.label}
+              className={cn(
+                "flex min-h-11 items-center justify-center gap-2 rounded-lg bg-orange-500 text-sm font-black text-black transition hover:bg-orange-400",
+                sidebarCollapsed ? "px-2" : "px-4",
+              )}
             >
               <Plus size={18} />
-              {primaryAction.label}
+              {!sidebarCollapsed ? primaryAction.label : null}
             </Link>
           ) : null}
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Status</p>
-            <div className="mt-3 flex items-center justify-between gap-3 text-xs font-black">
+          <div className={cn("rounded-xl border border-white/10 bg-white/[0.035] p-3", sidebarCollapsed ? "grid justify-center gap-2" : "")}>
+            {!sidebarCollapsed ? <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Status</p> : null}
+            {!sidebarCollapsed ? <div className="mt-3 flex items-center justify-between gap-3 text-xs font-black">
               <span className="text-zinc-400">Workspace</span>
               <span className={syncStatus === "cloud" ? "text-emerald-300" : "text-orange-300"}>
                 {syncStatus === "cloud" ? "Cloud OK" : "Local"}
               </span>
-            </div>
-            <button className="mt-3 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] text-xs font-black text-zinc-300" type="button" onClick={actions.togglePrivacy}>
+            </div> : null}
+            <button
+              className={cn(
+                "inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] text-xs font-black text-zinc-300",
+                sidebarCollapsed ? "size-10" : "mt-3 w-full",
+              )}
+              type="button"
+              onClick={actions.togglePrivacy}
+              title={state.privacyMode ? "Valores ocultos" : "Valores visíveis"}
+            >
               {state.privacyMode ? <EyeOff size={15} /> : <Eye size={15} />}
-              {state.privacyMode ? "Valores ocultos" : "Valores visíveis"}
+              {!sidebarCollapsed ? (state.privacyMode ? "Valores ocultos" : "Valores visíveis") : null}
             </button>
           </div>
 
-          <div className="mt-auto rounded-xl border border-cyan-300/15 bg-cyan-300/8 p-3">
+          {!sidebarCollapsed ? <div className="mt-auto rounded-xl border border-cyan-300/15 bg-cyan-300/8 p-3">
             <Sparkles className="text-cyan-300" size={18} />
             <p className="mt-3 text-sm font-black">Regra do produto</p>
             <p className="mt-1 text-xs leading-5 text-zinc-400">Menos cliques, menos digitação, mais operação pronta.</p>
-          </div>
+          </div> : null}
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col gap-4">

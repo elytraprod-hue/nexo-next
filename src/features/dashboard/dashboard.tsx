@@ -13,7 +13,7 @@ import {
   FileText,
   Gauge,
   MessageSquareReply,
-  Sparkles,
+  Target,
   WalletCards,
 } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
@@ -24,7 +24,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Surface } from "@/components/ui/surface";
 import { OperationsTimeline } from "@/features/dashboard/operations-timeline";
 import { SmartAlerts } from "@/features/dashboard/smart-alerts";
-import { AUDIOVISUAL_PRESETS, PRODUCTION_PIPELINE } from "@/lib/constants";
+import { PRODUCTION_PIPELINE } from "@/lib/constants";
 import { calculateMaturity, getClientName } from "@/lib/workspace-state";
 import { useWorkspaceState } from "@/hooks/use-workspace-state";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -79,13 +79,52 @@ export function Dashboard() {
   const activeProjects = state.projects.filter((project) => project.status !== "entregue");
   const nextProjects = activeProjects.slice(0, 3);
   const leads = state.clients.filter((client) => client.status === "lead");
+  const openProposals = [...state.proposals]
+    .filter((proposal) => proposal.status === "draft" || proposal.status === "sent")
+    .sort((a, b) => a.expectedCloseDate.localeCompare(b.expectedCloseDate));
   const nextClient = leads[0] ?? state.clients[0];
   const docsMissing = state.documents.length === 0;
   const nextDeadline = [...activeProjects].filter((project) => project.deadline).sort((a, b) => a.deadline.localeCompare(b.deadline))[0];
+  const productionAgenda = [...activeProjects]
+    .flatMap((project) => [
+      project.shootDate
+        ? {
+            id: `${project.id}-shoot`,
+            label: "Gravação",
+            date: project.shootDate,
+            title: project.title,
+            client: getClientName(state, project.clientId),
+            color: "var(--violet)",
+          }
+        : null,
+      project.deliveryDate
+        ? {
+            id: `${project.id}-delivery`,
+            label: "Entrega",
+            date: project.deliveryDate,
+            title: project.title,
+            client: getClientName(state, project.clientId),
+            color: "var(--orange)",
+          }
+        : null,
+    ])
+    .filter(Boolean)
+    .sort((a, b) => a!.date.localeCompare(b!.date))
+    .slice(0, 4) as { id: string; label: string; date: string; title: string; client: string; color: string }[];
   const quote = useMemo(() => directionQuotes[new Date().getDay() % directionQuotes.length], []);
   const displayName = user?.user_metadata?.name || user?.email?.split("@")[0] || "criador";
 
   const primaryAction = useMemo(() => {
+    if (openProposals.length) {
+      const proposal = openProposals[0];
+      return {
+        label: "Abrir comercial",
+        title: "Fechar a próxima proposta",
+        text: `${proposal.title} para ${getClientName(state, proposal.clientId)} tem fechamento previsto em ${formatDate(proposal.expectedCloseDate)}.`,
+        href: "/clientes",
+        color: "var(--green)",
+      };
+    }
     if (leads.length) {
       return {
         label: "Responder cliente agora",
@@ -120,13 +159,13 @@ export function Dashboard() {
       href: "/financeiro",
       color: "#facc15",
     };
-  }, [docsMissing, leads.length, nextDeadline]);
+  }, [docsMissing, leads.length, nextDeadline, openProposals, state]);
 
   const compactMetrics = [
-    { label: "Responder", value: metrics.clientsToAnswer, color: "var(--orange)", href: "/clientes" },
+    { label: "Propostas abertas", value: metrics.openProposals, color: "var(--green)", href: "/clientes" },
+    { label: "Receita prevista", value: formatCurrency(metrics.proposalForecast, privacy), color: "#facc15", href: "/clientes", money: true },
     { label: "Produção aberta", value: metrics.activeProjects, color: "var(--violet)", href: "/projetos" },
-    { label: "Docs salvos", value: metrics.savedDocs, color: "var(--cyan)", href: "/studio" },
-    { label: "A receber", value: formatCurrency(metrics.receivable, privacy), color: "#facc15", href: "/financeiro", money: true },
+    { label: "Entregas próximas", value: metrics.projectsNearDelivery, color: "var(--orange)", href: "/projetos" },
   ];
 
   return (
@@ -209,27 +248,46 @@ export function Dashboard() {
         </Surface>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <Surface>
           <SectionHeading
-            description="Atalhos que reduzem digitação e já abrem o próximo movimento da operação."
-            icon={Sparkles}
-            kicker="Ação guiada"
-            title="Começar rápido"
-          />
-
-          {nextClient ? (
-            <div className="mt-5 rounded-xl border border-orange-400/20 bg-orange-500/10 p-4">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300">Comercial</p>
-              <h3 className="mt-2 text-xl font-black">{nextClient.name}</h3>
-              <p className="mt-3 text-sm leading-6 text-zinc-300">{nextClient.nextAction}</p>
-              <Link className="mt-5 inline-flex items-center gap-2 text-sm font-black text-orange-300" href="/clientes">
-                Resolver agora
+            action={
+              <Link href="/clientes" className="inline-flex items-center gap-2 text-sm font-black text-emerald-300">
+                Comercial
                 <ArrowRight size={16} />
               </Link>
-            </div>
-          ) : (
-            <div className="mt-5">
+            }
+            description="Propostas, leads e fechamento previstos aparecem juntos para a produtora agir sem procurar."
+            icon={Target}
+            kicker="Receita"
+            title="Comercial em movimento"
+          />
+
+          <div className="mt-5 grid gap-3">
+            {openProposals.length ? openProposals.slice(0, 3).map((proposal) => (
+              <Link key={proposal.id} className="rounded-xl border border-emerald-300/15 bg-emerald-300/8 p-4 transition hover:bg-emerald-300/12" href="/clientes">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">{getClientName(state, proposal.clientId)}</p>
+                    <h3 className="mt-2 text-lg font-black leading-tight">{proposal.title}</h3>
+                  </div>
+                  <Badge color="var(--green)">{formatCurrency(proposal.amount, privacy)}</Badge>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-zinc-400">
+                  Fechamento previsto em {formatDate(proposal.expectedCloseDate)} · validade até {formatDate(proposal.validUntil)}
+                </p>
+              </Link>
+            )) : nextClient ? (
+              <div className="rounded-xl border border-orange-400/20 bg-orange-500/10 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300">Próximo cliente</p>
+                <h3 className="mt-2 text-xl font-black">{nextClient.name}</h3>
+                <p className="mt-3 text-sm leading-6 text-zinc-300">{nextClient.nextAction}</p>
+                <Link className="mt-5 inline-flex items-center gap-2 text-sm font-black text-orange-300" href="/clientes">
+                  Resolver agora
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+            ) : (
               <EmptyState
                 action={
                   <Link className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-black text-black transition hover:bg-orange-400" href="/clientes">
@@ -242,20 +300,22 @@ export function Dashboard() {
                 label="Primeiro uso"
                 title="Sua operação ainda não tem clientes"
               />
-            </div>
-          )}
+            )}
+          </div>
 
-          <div className="mt-4 grid gap-2">
-            {AUDIOVISUAL_PRESETS.slice(0, 4).map((preset) => (
-              <Link
-                key={preset.id}
-                className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] p-3 text-sm transition hover:bg-white/[0.08]"
-                href="/projetos"
-              >
-                <span className="font-black">{preset.label}</span>
-                <span className="text-zinc-500">{formatCurrency(preset.value, privacy)}</span>
-              </Link>
-            ))}
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Leads</p>
+              <p className="mt-2 text-2xl font-black text-orange-300">{metrics.clientsToAnswer}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">A fechar</p>
+              <p className="mt-2 text-2xl font-black text-emerald-300">{metrics.proposalsToClose}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">A receber</p>
+              <p className="mt-2 truncate text-2xl font-black text-yellow-300">{formatCurrency(metrics.receivable, privacy)}</p>
+            </div>
           </div>
         </Surface>
 
@@ -322,6 +382,27 @@ export function Dashboard() {
           </div>
         </Surface>
       </section>
+
+      {productionAgenda.length ? (
+        <Surface>
+          <SectionHeading
+            description="Agenda resumida para visualizar gravações e entregas sem abrir o projeto inteiro."
+            icon={CalendarDays}
+            kicker="Agenda operacional"
+            title="Próximos marcos"
+          />
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {productionAgenda.map((item) => (
+              <Link key={item.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.08]" href="/projetos">
+                <Badge color={item.color}>{item.label}</Badge>
+                <h3 className="mt-4 text-lg font-black leading-tight">{item.title}</h3>
+                <p className="mt-2 text-sm text-zinc-500">{item.client}</p>
+                <p className="mt-4 text-sm font-black text-zinc-300">{formatDate(item.date)}</p>
+              </Link>
+            ))}
+          </div>
+        </Surface>
+      ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
         <OperationsTimeline state={state} />

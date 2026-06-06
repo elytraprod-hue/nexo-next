@@ -162,13 +162,36 @@ function useWorkspaceStateModel() {
       .reduce((sum, entry) => sum + entry.amount, 0);
     const activeProjects = state.projects.filter((project) => project.status !== "entregue").length;
     const clientsToAnswer = state.clients.filter((client) => client.status === "lead").length;
+    const openProposals = state.proposals.filter((proposal) => proposal.status === "draft" || proposal.status === "sent");
+    const today = new Date();
+    const nextSevenDays = new Date(today);
+    nextSevenDays.setDate(today.getDate() + 7);
+    const proposalsToClose = openProposals.filter((proposal) => {
+      const closeDate = new Date(`${proposal.expectedCloseDate}T00:00:00.000Z`);
+      return closeDate <= nextSevenDays;
+    }).length;
+    const projectsNearDelivery = state.projects.filter((project) => {
+      if (project.status === "entregue" || !project.deliveryDate) return false;
+      const deliveryDate = new Date(`${project.deliveryDate}T00:00:00.000Z`);
+      return deliveryDate <= nextSevenDays;
+    }).length;
+    const upcomingShoots = state.projects.filter((project) => {
+      if (!project.shootDate || project.status === "entregue") return false;
+      const shootDate = new Date(`${project.shootDate}T00:00:00.000Z`);
+      return shootDate >= today && shootDate <= nextSevenDays;
+    }).length;
 
     return {
       receivable,
       received,
       payable,
       expectedProfit: receivable + received - payable,
+      proposalForecast: openProposals.reduce((sum, proposal) => sum + proposal.amount, 0),
+      openProposals: openProposals.length,
+      proposalsToClose,
       activeProjects,
+      projectsNearDelivery,
+      upcomingShoots,
       clientsToAnswer,
       savedDocs: state.documents.length,
     };

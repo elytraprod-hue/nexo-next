@@ -518,6 +518,7 @@ export const INITIAL_WORKSPACE_STATE: WorkspaceState = {
 export function calculateMaturity(state: WorkspaceState) {
   const checks = [
     state.clients.length > 0,
+    state.proposals.length > 0,
     state.projects.length > 0,
     state.projects.some((project) => Object.values(project.pipeline).some(Boolean)),
     state.financeEntries.length > 0,
@@ -564,8 +565,17 @@ export function getOperationalTimeline(state: WorkspaceState) {
     description: "Histórico salvo",
     type: "document" as const,
   }));
+  const proposalEvents = state.proposals
+    .filter((proposal) => proposal.status === "draft" || proposal.status === "sent")
+    .map((proposal) => ({
+      id: `${proposal.id}-proposal`,
+      date: proposal.expectedCloseDate,
+      title: `Fechamento: ${proposal.title}`,
+      description: `${getClientName(state, proposal.clientId)} · ${proposal.status === "sent" ? "enviada" : "rascunho"}`,
+      type: "proposal" as const,
+    }));
 
-  return [...projectEvents, ...financeEvents, ...documentEvents]
+  return [...projectEvents, ...proposalEvents, ...financeEvents, ...documentEvents]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 8);
 }
@@ -579,8 +589,19 @@ export function getWorkspaceAlerts(state: WorkspaceState) {
     const due = new Date(`${project.deadline}T00:00:00.000Z`);
     return due.getTime() - now.getTime() <= sevenDays && project.status !== "entregue";
   });
+  const closingProposals = state.proposals.filter((proposal) => {
+    if (proposal.status !== "draft" && proposal.status !== "sent") return false;
+    const closeDate = new Date(`${proposal.expectedCloseDate}T00:00:00.000Z`);
+    return closeDate.getTime() - now.getTime() <= sevenDays;
+  });
 
   return [
+    ...closingProposals.map((proposal) => ({
+      id: `proposal-${proposal.id}`,
+      label: "Proposta para fechar",
+      text: `${proposal.title} · ${getClientName(state, proposal.clientId)}`,
+      tone: "commercial" as const,
+    })),
     ...receivables.map((entry) => ({
       id: `receivable-${entry.id}`,
       label: "Recebimento aberto",

@@ -1,4 +1,4 @@
-import { CalendarDays, FileText, WalletCards } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, FileText, Truck, WalletCards } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Surface } from "@/components/ui/surface";
 import { formatDate } from "@/lib/utils/format";
@@ -10,6 +10,7 @@ const colors = {
   payable: "#fb7185",
   receivable: "#facc15",
   document: "var(--cyan)",
+  proposal: "var(--green)",
 };
 
 type OperationsTimelineProps = {
@@ -33,7 +34,10 @@ export function OperationsTimeline({ state }: OperationsTimelineProps) {
               <h3 className="font-black">{event.title}</h3>
               <p className="mt-1 text-sm text-zinc-500">{event.description}</p>
             </div>
-            {event.type === "document" ? <FileText className="text-cyan-300" size={18} /> : <WalletCards className="text-zinc-600" size={18} />}
+            {event.type === "document" ? <FileText className="text-cyan-300" size={18} /> : null}
+            {event.type === "proposal" ? <BriefcaseBusiness className="text-emerald-300" size={18} /> : null}
+            {event.type === "delivery" || event.type === "production" ? <Truck className="text-zinc-600" size={18} /> : null}
+            {event.type === "payable" || event.type === "receivable" ? <WalletCards className="text-zinc-600" size={18} /> : null}
           </article>
         ))}
       </div>

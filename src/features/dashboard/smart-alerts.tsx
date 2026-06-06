@@ -7,6 +7,7 @@ const toneColor = {
   money: "#facc15",
   deadline: "var(--orange)",
   doc: "var(--cyan)",
+  commercial: "var(--green)",
 };
 
 type SmartAlertsProps = {
@@ -24,7 +25,11 @@ export function SmartAlerts({ state }: SmartAlertsProps) {
       </div>
       <div className="mt-5 grid gap-3">
         {alerts.map((alert) => (
-          <Link key={alert.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.08]" href={alert.tone === "doc" ? "/studio" : alert.tone === "money" ? "/financeiro" : "/projetos"}>
+          <Link
+            key={alert.id}
+            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.08]"
+            href={alert.tone === "doc" ? "/studio" : alert.tone === "money" ? "/financeiro" : alert.tone === "commercial" ? "/clientes" : "/projetos"}
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em]" style={{ color: toneColor[alert.tone] }}>

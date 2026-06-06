@@ -15,6 +15,7 @@ import {
   Trash2,
   UserRoundPlus,
   WandSparkles,
+  X,
 } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -176,6 +177,7 @@ function ChipGroup({ options, value, onChange }: { options: string[]; value: str
 export function ClientsPage() {
   const { state, actions, ready } = useWorkspaceState();
   const [segment, setSegment] = useState<RelationshipType | "todos">("todos");
+  const [clientModalOpen, setClientModalOpen] = useState(false);
   const [activeStep, setActiveStep] = useState<StepId>("identidade");
   const [draft, setDraft] = useState<ClientDraft>(initialDraft);
   const [relationshipType, setRelationshipType] = useState<RelationshipType>("cliente");
@@ -272,6 +274,7 @@ export function ClientsPage() {
     setRelationshipType(client.relationshipType);
     setPresetId(AUDIOVISUAL_PRESETS.find((preset) => preset.service === client.service)?.id ?? presetId);
     setQuickAction(client.nextAction);
+    setClientModalOpen(false);
   }
 
   function addPlaybookClient(playbookId: (typeof NICHE_PLAYBOOKS)[number]["id"], nextAction: string) {
@@ -359,12 +362,43 @@ export function ClientsPage() {
       subtitle="Cadastro completo em etapas, modelos de nicho e próxima ação pronta para virar produção."
       title="Comercial"
     >
-      <section className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+      <section className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
         <div className="grid gap-4">
           <Surface>
+            <div className="flex items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-orange-500/15 text-orange-300">
+                <UserRoundPlus size={20} />
+              </span>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300">Cadastro guiado</p>
+                <h2 className="mt-2 text-xl font-black leading-tight">Criar cliente em uma janela própria</h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-400">A página fica limpa e o formulário completo abre focado, por etapas.</p>
+              </div>
+            </div>
+            <Button className="mt-5 w-full" disabled={!ready} onClick={() => setClientModalOpen(true)}>
+              <Plus size={17} />
+              Novo cliente
+            </Button>
+            {!canCreateClient && draft.name ? (
+              <p className="mt-3 text-xs font-bold leading-5 text-zinc-500">Rascunho em andamento: complete nome, contato e responsável para salvar.</p>
+            ) : null}
+          </Surface>
+
+          {clientModalOpen ? (
+            <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-3 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Novo contato guiado">
+              <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto">
+                <Surface className="border-orange-400/25">
             <div className="flex items-center gap-3">
               <UserRoundPlus className="text-orange-400" />
               <h2 className="text-xl font-black">Novo contato guiado</h2>
+              <button
+                className="ml-auto grid size-10 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-zinc-400 transition hover:text-white"
+                type="button"
+                aria-label="Fechar cadastro"
+                onClick={() => setClientModalOpen(false)}
+              >
+                <X size={17} />
+              </button>
             </div>
 
             <div className="mt-5 grid grid-cols-4 gap-2">
@@ -662,7 +696,10 @@ export function ClientsPage() {
             {!canCreateClient ? (
               <p className="mt-3 text-xs font-bold leading-5 text-zinc-500">Preencha pelo menos nome e um canal de contato para criar sem gerar carteira solta.</p>
             ) : null}
-          </Surface>
+                </Surface>
+              </div>
+            </div>
+          ) : null}
 
           {lastCreatedClient ? (
             <Surface className="border-emerald-300/20 bg-emerald-300/[0.06]">
