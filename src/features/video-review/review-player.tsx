@@ -40,6 +40,8 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
     () => [...comments].sort((a, b) => Number(a.timestampSeconds ?? 0) - Number(b.timestampSeconds ?? 0)),
     [comments],
   );
+  const openComments = useMemo(() => sortedComments.filter((comment) => !comment.resolved), [sortedComments]);
+  const resolvedComments = useMemo(() => sortedComments.filter((comment) => comment.resolved), [sortedComments]);
   const nearbyComments = useMemo(
     () => sortedComments.filter((comment) => Math.abs(Number(comment.timestampSeconds ?? 0) - currentTime) <= 4),
     [currentTime, sortedComments],
@@ -357,15 +359,15 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
         <div className="premium-card rounded-2xl p-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-black">Comentários</h2>
-            <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-zinc-300">{sortedComments.length}</span>
+            <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-zinc-300">{openComments.length} abertos</span>
           </div>
           <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
             <GitBranch className="mb-2 text-violet-300" size={16} />
             Threads por timestamp preparadas para respostas e resolução.
           </div>
           <div className="mt-4 grid max-h-[620px] gap-3 overflow-auto pr-1">
-            {sortedComments.length ? (
-              sortedComments.map((comment) => (
+            {openComments.length ? (
+              openComments.map((comment) => (
                 <button
                   key={comment.id}
                   className="focus-ring rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
@@ -384,9 +386,22 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
               ))
             ) : (
               <div className="rounded-lg border border-dashed border-white/10 p-6 text-center text-sm leading-6 text-zinc-500">
-                Nenhum comentário ainda. Pause o vídeo no ponto certo e envie o primeiro ajuste.
+                Nenhum comentário aberto. Pause o vídeo no ponto certo e envie o primeiro ajuste.
               </div>
             )}
+            {resolvedComments.length ? (
+              <details className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <summary className="cursor-pointer text-sm font-black text-zinc-400">{resolvedComments.length} resolvido(s)</summary>
+                <div className="mt-3 grid gap-2">
+                  {resolvedComments.map((comment) => (
+                    <button key={`resolved-${comment.id}`} className="rounded-lg border border-white/10 bg-black/20 p-3 text-left opacity-70" type="button" onClick={() => seekTo(comment.timestampSeconds ?? 0)}>
+                      <p className="text-xs font-black text-cyan-300">{comment.timecode}</p>
+                      <p className="mt-1 text-sm leading-6 text-zinc-300">{comment.content}</p>
+                    </button>
+                  ))}
+                </div>
+              </details>
+            ) : null}
           </div>
         </div>
       </aside>

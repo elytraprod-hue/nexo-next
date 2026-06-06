@@ -26,6 +26,7 @@ export function ReviewWorkspace() {
   const [statusText, setStatusText] = useState("");
   const [errorText, setErrorText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const canCreateRealReview = Boolean(user && workspaceId && syncStatus === "cloud");
 
   const sourceUrl = mode === "drive" ? driveUrl : videoUrl;
@@ -55,6 +56,7 @@ export function ReviewWorkspace() {
   async function createRealReview() {
     setErrorText("");
     setStatusText("");
+    setUploadProgress(0);
 
     if (!supabaseConfigured) {
       setErrorText("Supabase não está configurado neste ambiente.");
@@ -83,15 +85,19 @@ export function ReviewWorkspace() {
     }
 
     setBusy(true);
+    setUploadProgress(12);
 
     try {
       if (mode === "upload" && file) {
         setStatusText(`Enviando ${file.name} para o Supabase Storage...`);
+        setUploadProgress(38);
         const upload = await uploadReviewVideoFile({ file, reviewToken: nextToken, workspaceId });
         finalVideoUrl = upload.videoUrl;
+        setUploadProgress(68);
       }
 
       setStatusText("Criando link público, status de aprovação e área de comentários...");
+      setUploadProgress(84);
       const deliverable = await createReviewDeliverable({
         publicUrl,
         reviewToken: nextToken,
@@ -105,6 +111,7 @@ export function ReviewWorkspace() {
       setToken(deliverable.reviewToken);
       setCreatedReviewUrl(finalReviewUrl);
       setStatusText("Pronto. O cliente já pode assistir, comentar no tempo certo e aprovar pelo link público.");
+      setUploadProgress(100);
     } catch (error) {
       console.error(error);
       setErrorText(error instanceof Error ? error.message : "Não foi possível criar o review agora.");
@@ -244,6 +251,11 @@ export function ReviewWorkspace() {
                   {busy ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
                   <span>{statusText || "Preparando review..."}</span>
                 </div>
+                {uploadProgress ? (
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full rounded-full bg-emerald-300 transition-all" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>

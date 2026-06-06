@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Download, FileText, History, Save, Sparkles } from "lucide-react";
+import { Download, History, Plus, Save, Sparkles, X } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Surface } from "@/components/ui/surface";
 import { AUDIOVISUAL_PRESETS, DOC_FIELD_CONFIG, STUDIO_DOCUMENTS, type StudioDocId, presetById, studioDocById } from "@/lib/constants";
 import { useWorkspaceState } from "@/hooks/use-workspace-state";
-import { buildDocumentSummary, getClientName } from "@/lib/workspace-state";
+import { getClientName } from "@/lib/workspace-state";
 import { buildStudioDocumentHtml } from "@/lib/studio-document-html";
 
 type Payload = Record<string, string>;
@@ -24,11 +24,14 @@ export function StudioDocsPage() {
   const [presetId, setPresetId] = useState("institucional");
   const [payload, setPayload] = useState<Payload>({});
   const [latestId, setLatestId] = useState<string | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [selectedDocumentId, setSelectedDocumentId] = useState("");
 
   const doc = studioDocById(docType);
   const config = DOC_FIELD_CONFIG[docType];
   const preset = presetById(presetId);
   const project = state.projects.find((item) => item.id === projectId);
+  const selectedDocument = state.documents.find((item) => item.id === (selectedDocumentId || latestId || state.documents[0]?.id)) ?? null;
   const clientName = getClientName(state, clientId || project?.clientId);
   const restoredDocument = useMemo(() => {
     const documentId = searchParams.get("document");
@@ -46,18 +49,6 @@ export function StudioDocsPage() {
     setLatestId(restoredDocument.id);
   }, [restoredDocument]);
 
-  const preview = useMemo(
-    () =>
-      buildDocumentSummary({
-        docLabel: doc.label,
-        tone: config.tone,
-        clientName,
-        projectTitle: project?.title || preset.title,
-        presetTitle: preset.title,
-        payload,
-      }),
-    [clientName, config.tone, doc.label, payload, preset.title, project?.title],
-  );
   const previewHtml = useMemo(
     () =>
       buildStudioDocumentHtml({
@@ -96,12 +87,14 @@ export function StudioDocsPage() {
       payload,
     });
     setLatestId(record.id);
+    setSelectedDocumentId(record.id);
+    setComposerOpen(false);
   }
 
-  function exportPdf() {
+  function exportPdf(html = previewHtml) {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
-    printWindow.document.write(previewHtml);
+    printWindow.document.write(html);
     printWindow.document.close();
     window.setTimeout(() => printWindow.print(), 500);
   }
@@ -113,25 +106,32 @@ export function StudioDocsPage() {
       subtitle="Documentos pensados para audiovisual, com campos próprios e histórico salvo."
       title="Documentos"
     >
-      <section className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <div className="grid gap-4">
-          <Surface className="xl:sticky xl:top-32">
-            <div className="flex items-center gap-3">
-              <FileText className="text-cyan-300" />
-              <h2 className="text-xl font-black">Tipo de documento</h2>
+      {composerOpen ? (
+        <div className="workspace-overlay fixed inset-0 z-50 grid place-items-center p-3 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Criar documento">
+          <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto">
+            <Surface className="workspace-window border-cyan-300/20">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <Badge color={doc.color}>{doc.label}</Badge>
+                <h2 className="mt-3 text-2xl font-black">{config.title}</h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">{config.tone}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={generateDocument}>
+                  <Save size={17} />
+                  Salvar no histórico
+                </Button>
+                <button className="premium-control grid size-11 place-items-center rounded-lg text-zinc-400 hover:text-white" type="button" onClick={() => setComposerOpen(false)} aria-label="Fechar documento">
+                  <X size={17} />
+                </button>
+              </div>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-zinc-500">
-              <span className="rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-2 py-2 text-cyan-300">1. Tipo</span>
-              <span className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-2">2. Base</span>
-              <span className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-2">3. PDF</span>
-            </div>
-            <div className="mt-5 grid gap-3">
+
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
               {STUDIO_DOCUMENTS.map((item) => (
                 <button
                   key={item.id}
-                  className={`focus-ring rounded-lg border p-3 text-left transition ${
-                    docType === item.id ? "border-cyan-300 bg-cyan-300/10" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07]"
-                  }`}
+                  className={`focus-ring rounded-lg border p-3 text-left transition ${docType === item.id ? "border-cyan-300 bg-cyan-300/10" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07]"}`}
                   type="button"
                   onClick={() => {
                     setDocType(item.id);
@@ -145,22 +145,6 @@ export function StudioDocsPage() {
                   <p className="mt-2 text-xs font-bold leading-5 text-zinc-500">{item.description}</p>
                 </button>
               ))}
-            </div>
-          </Surface>
-        </div>
-
-        <div className="grid gap-4">
-          <Surface>
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <Badge color={doc.color}>{doc.label}</Badge>
-                <h2 className="mt-3 text-2xl font-black">{config.title}</h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">{config.tone}</p>
-              </div>
-              <Button onClick={generateDocument}>
-                <Save size={17} />
-                Salvar no histórico
-              </Button>
             </div>
 
             <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.035] p-4">
@@ -243,69 +227,89 @@ export function StudioDocsPage() {
                 ))}
               </div>
             </div>
-          </Surface>
-
-          <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_340px]">
-            <Surface>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="text-orange-400" />
-                  <h2 className="text-xl font-black">Preview do documento</h2>
-                </div>
-                <button className="inline-flex items-center gap-2 text-sm font-black text-orange-300" type="button" onClick={exportPdf}>
-                  <Download size={16} />
-                  Exportar PDF
-                </button>
-              </div>
-              {latestId ? <p className="mt-3 text-sm font-bold text-emerald-300">Documento salvo no histórico.</p> : null}
-              <div className="mt-5 overflow-hidden rounded-xl border border-white/10 bg-black/35">
-                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                  <span>Preview PDF</span>
-                  <span className="text-orange-300">{preset.label}</span>
-                </div>
-                <iframe className="h-[620px] w-full bg-[#f6f1e8]" title="Preview do documento" srcDoc={previewHtml} />
-              </div>
-              <details className="mt-3 rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <summary className="cursor-pointer text-sm font-black text-zinc-300">Ver texto estruturado</summary>
-                <pre className="mt-4 whitespace-pre-wrap text-sm leading-7 text-zinc-300">{preview}</pre>
-              </details>
             </Surface>
-
-            <Surface>
-              <div className="flex items-center gap-3">
-                <History className="text-cyan-300" />
-                <h2 className="text-xl font-black">Histórico</h2>
-              </div>
-              <div className="mt-5 grid gap-3">
-                {state.documents.length ? (
-                  state.documents.slice(0, 6).map((record) => {
-                    const item = studioDocById(record.docType);
-
-                    return (
-                      <article key={record.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                        <Badge color={item.color}>{item.label}</Badge>
-                        <h3 className="mt-3 font-black">{record.title}</h3>
-                        <p className="mt-2 text-xs text-zinc-500">{new Date(record.createdAt).toLocaleString("pt-BR")}</p>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <Link className="rounded-lg border border-white/10 bg-white/[0.055] px-3 py-2 text-xs font-black text-zinc-200 transition hover:text-white" href={`/studio/documentos/${record.id}`}>
-                            Abrir
-                          </Link>
-                          <Link className="rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-black text-cyan-200 transition hover:bg-cyan-300/15" href={`/studio?document=${record.id}`}>
-                            Restaurar
-                          </Link>
-                        </div>
-                      </article>
-                    );
-                  })
-                ) : (
-                  <div className="rounded-lg border border-dashed border-white/10 p-6 text-sm leading-6 text-zinc-500">
-                    Gere o primeiro documento para criar histórico por cliente/projeto.
-                  </div>
-                )}
-              </div>
-            </Surface>
-          </section>
+          </div>
         </div>
+      ) : null}
+
+      <section className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <Surface className="xl:sticky xl:top-28">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <History className="text-cyan-300" />
+              <h2 className="text-xl font-black">Histórico</h2>
+            </div>
+            <Button onClick={() => setComposerOpen(true)}>
+              <Plus size={17} />
+              Novo
+            </Button>
+          </div>
+          <div className="mt-5 grid gap-2">
+            {state.documents.length ? (
+              state.documents.map((record) => {
+                const item = studioDocById(record.docType);
+                const active = selectedDocument?.id === record.id;
+
+                return (
+                  <button key={record.id} className={`focus-ring rounded-xl border p-3 text-left transition ${active ? "border-cyan-300/45 bg-cyan-300/10" : "border-white/10 bg-white/[0.032] hover:bg-white/[0.055]"}`} type="button" onClick={() => setSelectedDocumentId(record.id)}>
+                    <Badge color={item.color}>{item.label}</Badge>
+                    <h3 className="mt-3 font-black leading-tight">{record.title}</h3>
+                    <p className="mt-2 text-xs text-zinc-500">{new Date(record.createdAt).toLocaleString("pt-BR")}</p>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="rounded-lg border border-dashed border-white/10 p-6 text-sm leading-6 text-zinc-500">
+                Gere o primeiro documento para criar histórico por cliente/projeto.
+              </div>
+            )}
+          </div>
+        </Surface>
+
+        <Surface>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Sparkles className="text-orange-400" />
+              <div>
+                <h2 className="text-xl font-black">{selectedDocument?.title ?? "Preview do documento"}</h2>
+                <p className="mt-1 text-sm text-zinc-500">
+                  {selectedDocument ? "Documento salvo com dados da empresa, cliente e projeto." : "Crie ou selecione um documento para visualizar o PDF."}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {selectedDocument ? (
+                <Link className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/10 bg-white/[0.055] px-4 text-sm font-black text-zinc-200" href={`/studio/documentos/${selectedDocument.id}`}>
+                  Abrir
+                </Link>
+              ) : null}
+              <button className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-black text-black" type="button" onClick={() => exportPdf(selectedDocument?.html ?? previewHtml)}>
+                <Download size={16} />
+                Exportar PDF
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-black/35">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                <span>Preview PDF</span>
+                <span className="text-orange-300">{state.businessProfile.name}</span>
+              </div>
+              <iframe className="h-[720px] w-full bg-[#f6f1e8]" title="Preview do documento" srcDoc={selectedDocument?.html ?? previewHtml} />
+            </div>
+            <aside className="premium-card rounded-xl p-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Branding automático</p>
+              <h3 className="mt-3 text-lg font-black">{state.businessProfile.name}</h3>
+              <div className="mt-4 grid gap-3 text-sm font-bold leading-6 text-zinc-400">
+                <p>Assinatura: {state.businessProfile.defaultSignature || "Não configurada"}</p>
+                <p>E-mail: {state.businessProfile.email || "Não informado"}</p>
+                <p>Site: {state.businessProfile.siteUrl || "Não informado"}</p>
+                <p>Cliente: {selectedDocument ? getClientName(state, selectedDocument.clientId) : clientName}</p>
+              </div>
+            </aside>
+          </div>
+        </Surface>
       </section>
     </AppShell>
   );
