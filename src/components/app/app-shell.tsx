@@ -34,11 +34,11 @@ import { canAccessAdmin } from "@/lib/auth/roles";
 
 const navigation = [
   { href: "/dashboard", label: "Hoje", icon: Home },
-  { href: "/clientes", label: "Comercial", icon: BriefcaseBusiness },
-  { href: "/projetos", label: "Produção", icon: Clapperboard },
-  { href: "/studio", label: "Studio Docs", icon: FileText },
-  { href: "/financeiro", label: "Financeiro", icon: WalletCards },
-  { href: "/review", label: "Review", icon: MessageSquareReply },
+  { href: "/clientes", label: "Vender", icon: BriefcaseBusiness },
+  { href: "/projetos", label: "Produzir", icon: Clapperboard },
+  { href: "/studio", label: "Documentar", icon: FileText },
+  { href: "/review", label: "Aprovar", icon: MessageSquareReply },
+  { href: "/financeiro", label: "Receber", icon: WalletCards },
   { href: "/configuracoes", label: "Empresa", icon: Settings },
 ];
 

@@ -7,7 +7,9 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   CalendarDays,
+  CheckCircle2,
   Clapperboard,
+  CircleDot,
   Eye,
   EyeOff,
   FileText,
@@ -24,6 +26,7 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Surface } from "@/components/ui/surface";
 import { PRODUCTION_PIPELINE } from "@/lib/constants";
+import { buildGuidedWorkflow } from "@/lib/guided-workflows";
 import { buildOperationalCockpit } from "@/lib/operational-engine";
 import { calculateMaturity, getClientName } from "@/lib/workspace-state";
 import { useWorkspaceState } from "@/hooks/use-workspace-state";
@@ -76,6 +79,7 @@ export function Dashboard() {
   const [showDetails, setShowDetails] = useState(false);
   const maturity = calculateMaturity(state);
   const cockpit = useMemo(() => buildOperationalCockpit(state), [state]);
+  const guided = useMemo(() => buildGuidedWorkflow(state), [state]);
   const privacy = state.privacyMode;
   const activeProjects = state.projects.filter((project) => project.status !== "entregue");
   const nextProjects = activeProjects.slice(0, 3);
@@ -196,6 +200,65 @@ export function Dashboard() {
       subtitle="O que precisa de decisão agora, sem transformar a abertura do sistema em painel administrativo."
       title="Hoje"
     >
+      <Surface className="overflow-hidden border-emerald-300/14 bg-emerald-300/[0.035]">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-3xl">
+            <Badge color="var(--green)">Modo assistido</Badge>
+            <h2 className="mt-3 text-2xl font-black leading-tight sm:text-3xl">Uma produtora operando do lead ao recebimento.</h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-400">{guided.summary}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-black/28 p-4 xl:w-[340px]">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Ciclo operacional</p>
+                <p className="mt-2 text-4xl font-black text-emerald-300">{guided.progress}%</p>
+              </div>
+              <Link
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-4 text-sm font-black text-black transition hover:bg-emerald-200"
+                href={guided.currentStep.href}
+              >
+                {guided.currentStep.cta}
+                <ArrowRight size={17} />
+              </Link>
+            </div>
+            <div className="mt-4 h-2 rounded-full bg-white/10">
+              <div className="h-2 rounded-full bg-emerald-300" style={{ width: `${guided.progress}%` }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+          {guided.steps.map((step) => {
+            const active = step.id === guided.currentStep.id && !step.done;
+            const Icon = step.done ? CheckCircle2 : CircleDot;
+
+            return (
+              <Link
+                key={step.id}
+                className={`group rounded-2xl border p-4 transition hover:-translate-y-0.5 ${
+                  step.done
+                    ? "border-emerald-300/24 bg-emerald-300/[0.075]"
+                    : active
+                      ? "border-orange-400/35 bg-orange-500/[0.09]"
+                      : step.blocked
+                        ? "border-white/[0.06] bg-white/[0.02] opacity-70"
+                        : "border-white/10 bg-white/[0.04]"
+                }`}
+                href={step.href}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{step.label}</span>
+                  <Icon className={step.done ? "text-emerald-300" : active ? "text-orange-300" : "text-zinc-600"} size={18} />
+                </div>
+                <h3 className="mt-4 text-sm font-black leading-tight text-zinc-100">{step.title}</h3>
+                <p className="mt-2 line-clamp-3 text-xs font-bold leading-5 text-zinc-500">{step.description}</p>
+                {active ? <p className="mt-4 text-xs font-black text-orange-300">{step.need}</p> : null}
+              </Link>
+            );
+          })}
+        </div>
+      </Surface>
+
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)]">
         <Surface className="overflow-hidden border-orange-400/12 bg-orange-500/[0.035]">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
