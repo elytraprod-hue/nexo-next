@@ -156,19 +156,22 @@ export function ReviewPage({ initialTitle, initialVideoSource = "direct", initia
   }
 
   return (
-    <main className="app-bg min-h-screen px-4 py-5 text-zinc-100 sm:px-6 lg:px-8">
-      <div className="mx-auto grid w-full max-w-7xl gap-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Link className="inline-flex items-center gap-2 text-sm font-bold text-zinc-400 hover:text-white" href="/">
+    <main className="app-bg min-h-screen px-3 py-4 text-zinc-100 sm:px-5 lg:px-6">
+      <div className="mx-auto grid w-full max-w-[1500px] gap-4">
+        <header className="sticky top-3 z-30 flex flex-col gap-3 rounded-[22px] border border-white/[0.075] bg-black/55 p-3 shadow-2xl backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between">
+          <Link className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-black text-zinc-400 transition hover:bg-white/[0.055] hover:text-white" href="/">
             <ArrowLeft size={18} />
-            Voltar ao NEXO
+            NEXO Review
           </Link>
-          <Badge color="var(--orange)">Review público</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge color="var(--orange)">Link público</Badge>
+            {deliverable ? <Badge color={deliverable.status === "approved" ? "var(--green)" : "var(--cyan)"}>{deliverable.title}</Badge> : null}
+          </div>
         </header>
 
         {notice ? <div className="rounded-2xl border border-orange-400/25 bg-orange-400/10 px-4 py-3 text-sm font-bold text-orange-100">{notice}</div> : null}
 
-        <Surface className="p-3 sm:p-4">
+        <Surface className="border-white/[0.06] bg-white/[0.022] p-2 sm:p-3">
           {loading ? (
             <div className="grid min-h-[520px] place-items-center text-center text-zinc-400">
               <div>

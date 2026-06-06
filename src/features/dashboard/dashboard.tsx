@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  BadgeCheck,
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
@@ -12,12 +11,10 @@ import {
   CircleDot,
   Eye,
   EyeOff,
-  FileText,
   Gauge,
   MessageSquareReply,
   PanelTop,
   Target,
-  WalletCards,
 } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -39,44 +36,8 @@ const directionQuotes = [
   "Consistência vence motivação.",
 ];
 
-const modules = [
-  {
-    href: "/clientes",
-    icon: BriefcaseBusiness,
-    label: "Comercial",
-    title: "Clientes, parcerias e freelancers",
-    text: "Cadastro guiado, próxima ação e relacionamento em um lugar.",
-    color: "var(--green)",
-  },
-  {
-    href: "/projetos",
-    icon: Clapperboard,
-    label: "Produção",
-    title: "Pipeline visual por projeto",
-    text: "Briefing, roteiro, decupagem, callsheet, checklist e entrega.",
-    color: "var(--violet)",
-  },
-  {
-    href: "/studio",
-    icon: FileText,
-    label: "Studio Docs",
-    title: "Documentos do audiovisual",
-    text: "Cada documento tem campos próprios e histórico salvo.",
-    color: "var(--cyan)",
-  },
-  {
-    href: "/financeiro",
-    icon: WalletCards,
-    label: "Financeiro",
-    title: "Operação em segundos",
-    text: "Receber, pagar, recebido e lucro previsto com privacidade.",
-    color: "#facc15",
-  },
-];
-
 export function Dashboard() {
   const { state, metrics, actions, user, syncStatus } = useWorkspaceState();
-  const [showDetails, setShowDetails] = useState(false);
   const maturity = calculateMaturity(state);
   const cockpit = useMemo(() => buildOperationalCockpit(state), [state]);
   const guided = useMemo(() => buildGuidedWorkflow(state), [state]);
@@ -534,55 +495,6 @@ export function Dashboard() {
         </Surface>
       ) : null}
 
-      <div className="flex justify-center">
-        <button
-          className="min-h-11 rounded-2xl border border-white/10 bg-white/[0.055] px-4 text-sm font-black text-zinc-300 transition hover:text-white"
-          type="button"
-          onClick={() => setShowDetails((value) => !value)}
-        >
-          {showDetails ? "Ocultar mapa completo" : "Ver mapa completo"}
-        </button>
-      </div>
-
-      {showDetails ? (
-        <>
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {modules.map((module) => {
-              const Icon = module.icon;
-              return (
-                <Link
-                  key={module.href}
-                  className="group soft-panel min-h-52 rounded-xl p-5 transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.07]"
-                  href={module.href}
-                >
-                  <Icon size={24} style={{ color: module.color }} />
-                  <p className="mt-6 text-xs font-black uppercase tracking-[0.2em] text-zinc-500">{module.label}</p>
-                  <h3 className="mt-3 text-xl font-black leading-tight">{module.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">{module.text}</p>
-                </Link>
-              );
-            })}
-          </section>
-
-          <Surface>
-            <div className="flex items-center gap-3">
-              <BadgeCheck className="text-emerald-300" />
-              <h2 className="text-xl font-black">Pipeline padrão</h2>
-            </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-              {PRODUCTION_PIPELINE.map((step, index) => (
-                <div key={step.key} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <span className="text-xs font-black uppercase tracking-[0.2em]" style={{ color: step.color }}>
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="mt-3 font-black">{step.label}</h3>
-                  <p className="mt-2 text-sm text-zinc-500">{step.docType}</p>
-                </div>
-              ))}
-            </div>
-          </Surface>
-        </>
-      ) : null}
     </AppShell>
   );
 }

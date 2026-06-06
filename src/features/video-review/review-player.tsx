@@ -139,9 +139,9 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
   const progress = duration ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
 
   return (
-    <section className="review-grid grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
       <div className="grid gap-4">
-        <div className="relative overflow-hidden rounded-[24px] border border-white/[0.075] bg-black shadow-[0_28px_120px_rgba(0,0,0,0.52)]">
+        <div className="relative overflow-hidden rounded-[18px] border border-white/[0.075] bg-black shadow-[0_28px_120px_rgba(0,0,0,0.52)]">
           {deliverable.videoUrl ? (
             <video
               ref={videoRef}
@@ -190,7 +190,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
           </div>
         ) : null}
 
-        <div className="premium-card rounded-2xl p-4">
+        <div className="rounded-[18px] border border-white/[0.075] bg-black/34 p-4">
           <div className="flex items-center justify-between gap-3 text-sm font-bold text-zinc-400">
             <span>{formatTimecode(currentTime)}</span>
             <span>{formatTimecode(duration)}</span>
@@ -241,13 +241,13 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
           ) : null}
         </div>
 
-        <div className="premium-card grid gap-3 rounded-2xl p-4">
+        <div className="rounded-[18px] border border-orange-400/18 bg-orange-500/[0.055] p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Comentar neste momento</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">Comentar neste momento</p>
               <p className="mt-1 text-xl font-black text-orange-300">{formatTimecode(currentTime)}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button disabled={isPlaying || !deliverable.videoUrl} variant="ghost" onClick={() => videoRef.current?.play()}>
                 <Play size={17} />
                 Play
@@ -303,42 +303,15 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
         </div>
       </div>
 
-      <aside className="grid content-start gap-4">
-        <div className="premium-card rounded-2xl p-4">
-          <div className="flex items-start justify-between gap-3">
+      <aside className="grid content-start gap-4 xl:sticky xl:top-24">
+        <div className="rounded-[18px] border border-white/[0.075] bg-white/[0.035] p-4 shadow-2xl backdrop-blur-2xl">
+          <div className="flex flex-col gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Entregável</p>
-              <h1 className="mt-2 text-xl font-black leading-tight">{deliverable.title}</h1>
+              <h1 className="mt-2 text-2xl font-black leading-tight">{deliverable.title}</h1>
               <p className="mt-2 text-sm text-zinc-500">Versão {deliverable.version ?? 1} · Rodada {deliverable.revisionRound ?? 1}</p>
             </div>
             <Badge color={statusMeta[deliverable.status].color}>{statusMeta[deliverable.status].label}</Badge>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-xs font-black">
-            <div className="rounded-lg border border-white/10 bg-black/20 p-3 text-zinc-400">
-              Status<br />
-              <span className="text-orange-300">{statusMeta[deliverable.status].label}</span>
-            </div>
-            <div className="rounded-lg border border-white/10 bg-black/20 p-3 text-zinc-400">
-              Versão<br />
-              <span className="text-cyan-300">v{deliverable.version ?? 1}</span>
-            </div>
-            <div className="rounded-lg border border-white/10 bg-black/20 p-3 text-zinc-400">
-              Ajustes<br />
-              <span className="text-emerald-300">{sortedComments.length}</span>
-            </div>
-          </div>
-          <div className="mt-3 rounded-xl border border-white/[0.075] bg-black/20 p-3">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
-              <Link2 size={14} />
-              Link público
-            </div>
-            <div className="mt-2 flex items-center gap-2">
-              <p className="min-w-0 flex-1 truncate text-sm font-bold text-zinc-300">{publicUrl}</p>
-              <button className="grid size-10 place-items-center rounded-lg border border-white/10 bg-white/[0.045] text-zinc-300" type="button" onClick={copyPublicLink} aria-label="Copiar link público">
-                <Copy size={16} />
-              </button>
-            </div>
-            {copied ? <p className="mt-2 text-xs font-black text-emerald-300">Link copiado.</p> : null}
           </div>
           <div className="mt-5 grid gap-2">
             <Button variant="success" onClick={() => onStatusChange("approved")}>
@@ -354,16 +327,29 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
               Precisa revisar
             </Button>
           </div>
+          <div className="mt-4 rounded-xl border border-white/[0.075] bg-black/20 p-3">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+              <Link2 size={14} />
+              Link público
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <p className="min-w-0 flex-1 truncate text-sm font-bold text-zinc-300">{publicUrl}</p>
+              <button className="grid size-10 place-items-center rounded-lg border border-white/10 bg-white/[0.045] text-zinc-300" type="button" onClick={copyPublicLink} aria-label="Copiar link público">
+                <Copy size={16} />
+              </button>
+            </div>
+            {copied ? <p className="mt-2 text-xs font-black text-emerald-300">Link copiado.</p> : null}
+          </div>
         </div>
 
-        <div className="premium-card rounded-2xl p-4">
+        <div className="rounded-[18px] border border-white/[0.075] bg-white/[0.035] p-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-black">Comentários</h2>
             <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-zinc-300">{openComments.length} abertos</span>
           </div>
-          <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
-            <GitBranch className="mb-2 text-violet-300" size={16} />
-            Threads por timestamp preparadas para respostas e resolução.
+          <div className="mt-3 rounded-lg border border-cyan-300/18 bg-cyan-300/[0.08] p-3 text-xs font-black uppercase tracking-[0.14em] text-cyan-200">
+            <GitBranch className="mb-2" size={16} />
+            Clique em qualquer comentário para voltar ao segundo exato.
           </div>
           <div className="mt-4 grid max-h-[620px] gap-3 overflow-auto pr-1">
             {openComments.length ? (

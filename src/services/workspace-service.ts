@@ -611,3 +611,19 @@ export async function insertDocument(supabase: SupabaseClient, workspaceId: stri
 
   if (error) throw error;
 }
+
+export async function insertFinanceEntry(supabase: SupabaseClient, workspaceId: string, entry: FinanceEntry) {
+  const { error } = await supabase.from("finance_entries").insert({
+    id: entry.id,
+    workspace_id: workspaceId,
+    label: entry.label,
+    type: entry.type,
+    amount: entry.amount,
+    status: entry.status,
+    due_at: entry.dueAt,
+    client_id: entry.clientId ?? null,
+    project_id: entry.projectId ?? null,
+  });
+
+  if (error) throw error;
+}

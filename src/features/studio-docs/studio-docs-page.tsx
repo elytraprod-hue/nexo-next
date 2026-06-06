@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Download, History, Plus, Save, Sparkles, X } from "lucide-react";
+import { Download, History, Plus, Save, Sparkles, Wand2, X } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Surface } from "@/components/ui/surface";
 import { AUDIOVISUAL_PRESETS, DOC_FIELD_CONFIG, STUDIO_DOCUMENTS, type StudioDocId, presetById, studioDocById } from "@/lib/constants";
-import { DOCUMENT_NEEDS } from "@/lib/guided-workflows";
 import { useWorkspaceState } from "@/hooks/use-workspace-state";
 import { getClientName } from "@/lib/workspace-state";
 import { buildStudioDocumentHtml } from "@/lib/studio-document-html";
@@ -92,9 +91,32 @@ export function StudioDocsPage() {
     setComposerOpen(false);
   }
 
-  function startDocument(nextDocType: StudioDocId) {
-    setDocType(nextDocType);
-    setPayload({});
+  function prefillCommercialProposal() {
+    const activeProject = state.projects.find((item) => item.id === projectId) ?? state.projects[0];
+    const activePreset = presetById(activeProject?.presetId || presetId);
+    const activeClientId = activeProject?.clientId || clientId || state.clients[0]?.id || "";
+
+    if (activeProject) {
+      setProjectId(activeProject.id);
+      setClientId(activeProject.clientId);
+      setPresetId(activeProject.presetId);
+    } else if (activeClientId) {
+      setClientId(activeClientId);
+    }
+
+    setDocType("proposta");
+    setPayload({
+      Investimento: String(activeProject?.budget || activePreset.value || ""),
+      Condições: "50% na aprovação da proposta e 50% na entrega final.",
+      Validade: "",
+      "Próximo passo": "Aprovar proposta, confirmar briefing e iniciar pré-produção.",
+      "Prazo de produção": activeProject?.deliveryDate ? `Entrega prevista em ${new Date(activeProject.deliveryDate).toLocaleDateString("pt-BR")}` : "Prazo definido após briefing aprovado.",
+      "Rodadas inclusas": "2 rodadas de ajustes inclusas após o primeiro corte.",
+      "Escopo incluído": activeProject?.briefing || `${activePreset.service} para ${activePreset.defaultBriefing.objective}`,
+      Entregáveis: activePreset.deliverables.join("\n"),
+      "Fluxo de produção": "Briefing\nPré-produção\nCaptação\nEdição\nRevisão com link público\nEntrega final",
+      "Extras e premissas": "Deslocamento, urgência, novas diárias, mídia paga, locações e alterações fora do escopo podem ser orçados à parte.",
+    });
     setComposerOpen(true);
   }
 
@@ -113,47 +135,25 @@ export function StudioDocsPage() {
       subtitle="Documentos pensados para audiovisual, com campos próprios e histórico salvo."
       title="Documentos"
     >
-      <Surface className="border-cyan-300/14 bg-cyan-300/[0.035]">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <Badge color="var(--cyan)">Documentos por necessidade</Badge>
-            <h2 className="mt-3 text-2xl font-black leading-tight">Escolha o que a produtora precisa resolver agora.</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-              Em vez de começar por um formulário, comece por uma situação: vender, gravar, proteger o set ou entregar.
-            </p>
-          </div>
-          <Button onClick={() => setComposerOpen(true)}>
+      <section className="flex flex-col gap-3 rounded-[18px] border border-white/[0.075] bg-white/[0.026] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+        <div className="min-w-0">
+          <Badge color="var(--cyan)">Biblioteca da produtora</Badge>
+          <h2 className="mt-2 text-xl font-black leading-tight">Documentos, propostas e PDFs em um só lugar.</h2>
+          <p className="mt-1 max-w-3xl text-sm font-bold leading-6 text-zinc-500">
+            Selecione um histórico, monte uma proposta com dados da empresa ou abra a janela para criar outro documento.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="success" onClick={prefillCommercialProposal}>
+            <Wand2 size={17} />
+            Proposta comercial
+          </Button>
+          <Button variant="ghost" onClick={() => setComposerOpen(true)}>
             <Plus size={17} />
-            Criar livre
+            Novo documento
           </Button>
         </div>
-
-        <div className="mt-6 grid gap-3 lg:grid-cols-4">
-          {DOCUMENT_NEEDS.map((need) => (
-            <div key={need.id} className="rounded-2xl border border-white/10 bg-black/22 p-4">
-              <span className="h-2 w-12 rounded-full block" style={{ background: need.color }} />
-              <h3 className="mt-4 text-lg font-black leading-tight">{need.title}</h3>
-              <p className="mt-2 min-h-[42px] text-sm leading-6 text-zinc-500">{need.description}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {need.docTypes.map((item) => {
-                  const studioDoc = studioDocById(item);
-
-                  return (
-                    <button
-                      key={item}
-                      className="rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-black text-zinc-300 transition hover:border-cyan-300/35 hover:text-white"
-                      type="button"
-                      onClick={() => startDocument(item)}
-                    >
-                      {studioDoc.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Surface>
+      </section>
 
       {composerOpen ? (
         <div className="workspace-overlay fixed inset-0 z-50 grid place-items-center p-3 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Criar documento">
@@ -165,10 +165,14 @@ export function StudioDocsPage() {
                 <h2 className="mt-3 text-2xl font-black">{config.title}</h2>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">{config.tone}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button onClick={generateDocument}>
                   <Save size={17} />
                   Salvar no histórico
+                </Button>
+                <Button variant="ghost" onClick={() => exportPdf(previewHtml)}>
+                  <Download size={17} />
+                  Exportar PDF
                 </Button>
                 <button className="premium-control grid size-11 place-items-center rounded-lg text-zinc-400 hover:text-white" type="button" onClick={() => setComposerOpen(false)} aria-label="Fechar documento">
                   <X size={17} />
@@ -176,11 +180,11 @@ export function StudioDocsPage() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {STUDIO_DOCUMENTS.map((item) => (
                 <button
                   key={item.id}
-                  className={`focus-ring rounded-lg border p-3 text-left transition ${docType === item.id ? "border-cyan-300 bg-cyan-300/10" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07]"}`}
+                  className={`focus-ring min-h-[86px] rounded-lg border p-3 text-left transition ${docType === item.id ? "border-cyan-300 bg-cyan-300/10" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07]"}`}
                   type="button"
                   onClick={() => {
                     setDocType(item.id);
@@ -188,10 +192,10 @@ export function StudioDocsPage() {
                   }}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-black">{item.label}</h3>
+                    <h3 className="text-sm font-black leading-tight">{item.label}</h3>
                     <span className="mt-1 h-2 w-8 rounded-full" style={{ background: item.color }} />
                   </div>
-                  <p className="mt-2 text-xs font-bold leading-5 text-zinc-500">{item.description}</p>
+                  <p className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-zinc-500">{item.description}</p>
                 </button>
               ))}
             </div>

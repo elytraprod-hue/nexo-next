@@ -21,7 +21,6 @@ import {
   Plus,
   Search,
   Settings,
-  Sparkles,
   X,
   WalletCards,
 } from "lucide-react";
@@ -199,34 +198,35 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
         <aside
           className={cn(
             "hidden shrink-0 flex-col gap-3 rounded-[22px] border border-white/[0.075] bg-black/42 p-3 shadow-2xl backdrop-blur-2xl transition-[width] duration-300 md:flex",
-            sidebarCollapsed ? "w-[76px]" : "w-[236px]",
+            sidebarCollapsed ? "w-[76px]" : "w-[292px]",
           )}
         >
-          <div className="flex items-center gap-2">
+          <div className={cn("grid gap-2", sidebarCollapsed ? "justify-center" : "")}>
             <Link
               href="/dashboard"
               className={cn(
-                "flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-orange-400/15 bg-orange-500/[0.08] p-3",
+                "flex min-w-0 items-center gap-3 rounded-2xl border border-orange-400/15 bg-orange-500/[0.08] p-3",
                 sidebarCollapsed ? "justify-center" : "",
               )}
               title="NEXO Studio OS"
             >
-            <div className="grid size-11 place-items-center rounded-xl border border-orange-400/40 bg-orange-500 text-xl font-black text-black shadow-[0_0_28px_rgba(255,106,0,0.25)]">
-              {state.businessProfile.name.slice(0, 1) || "N"}
-            </div>
-            {!sidebarCollapsed ? <div className="min-w-0">
-              <p className="display-font text-xl font-black leading-none">NEXO</p>
-              <p className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.16em] text-orange-400">{state.businessProfile.name} OS</p>
-            </div> : null}
+              <div className="grid size-12 shrink-0 place-items-center rounded-2xl border border-orange-400/40 bg-orange-500 text-xl font-black text-black shadow-[0_0_28px_rgba(255,106,0,0.25)]">
+                {state.businessProfile.name.slice(0, 1) || "N"}
+              </div>
+              {!sidebarCollapsed ? <div className="min-w-0">
+                <p className="display-font text-2xl font-black leading-none tracking-normal">NEXO</p>
+                <p className="mt-1 max-w-[190px] truncate text-[11px] font-black uppercase tracking-[0.16em] text-orange-400">{state.businessProfile.name}</p>
+              </div> : null}
             </Link>
             {!sidebarCollapsed ? (
               <button
                 aria-label="Recolher lateral"
-                className="premium-control grid size-11 place-items-center rounded-xl text-zinc-400 transition hover:text-white"
+                className="premium-control inline-flex min-h-10 items-center justify-center gap-2 rounded-xl text-xs font-black text-zinc-400 transition hover:text-white"
                 type="button"
                 onClick={() => setSidebarCollapsed(true)}
               >
                 <PanelLeftClose size={18} />
+                Recolher menu
               </button>
             ) : null}
           </div>
@@ -242,9 +242,9 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </button>
           ) : null}
 
-          <div className="premium-card rounded-xl p-2">
-            {!sidebarCollapsed ? <p className="px-2 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Acesso rápido</p> : null}
-            <nav className="mt-3 grid gap-1">
+          <div className="rounded-2xl border border-white/[0.075] bg-white/[0.028] p-2">
+            {!sidebarCollapsed ? <p className="px-2 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Navegação</p> : null}
+            <nav className="mt-3 grid gap-1.5">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
@@ -256,7 +256,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
                     title={item.label}
                     className={cn(
                       "flex min-h-10 items-center rounded-lg text-sm font-black transition",
-                      sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3",
+                      sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3.5",
                       active
                         ? "os-left-accent border border-orange-400/24 bg-orange-500/[0.12] text-orange-300 shadow-[0_12px_30px_rgba(255,106,0,0.1)]"
                         : "border border-transparent text-zinc-500 hover:border-white/10 hover:bg-white/[0.055] hover:text-white",
@@ -275,8 +275,8 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
               href={primaryAction.href}
               title={primaryAction.label}
               className={cn(
-                "flex min-h-11 items-center justify-center gap-2 rounded-lg bg-orange-500 text-sm font-black text-black transition hover:bg-orange-400",
-                sidebarCollapsed ? "px-2" : "px-4",
+                "flex min-h-10 items-center justify-center gap-2 rounded-xl text-sm font-black transition",
+                sidebarCollapsed ? "bg-orange-500 px-2 text-black hover:bg-orange-400" : "border border-orange-400/22 bg-orange-500/[0.12] px-4 text-orange-200 hover:bg-orange-500/20",
               )}
             >
               <Plus size={18} />
@@ -284,7 +284,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </Link>
           ) : null}
 
-          <div className={cn("premium-card rounded-xl p-3", sidebarCollapsed ? "grid justify-center gap-2" : "")}>
+          <div className={cn("rounded-2xl border border-white/[0.075] bg-white/[0.028] p-3", sidebarCollapsed ? "grid justify-center gap-2" : "")}>
             {!sidebarCollapsed ? <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Status</p> : null}
             {!sidebarCollapsed ? <div className="mt-3 flex items-center justify-between gap-3 text-xs font-black">
               <span className="text-zinc-400">Workspace</span>
@@ -306,11 +306,6 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </button>
           </div>
 
-          {!sidebarCollapsed ? <div className="mt-auto rounded-xl border border-cyan-300/12 bg-cyan-300/[0.055] p-3">
-            <Sparkles className="text-cyan-300" size={18} />
-            <p className="mt-3 text-sm font-black">Regra do produto</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-400">Menos cliques, menos digitação, mais operação pronta.</p>
-          </div> : null}
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col gap-5">
@@ -320,7 +315,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
                 <div className="flex flex-wrap items-center gap-3">
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-400">{eyebrow}</p>
                   <span className="hidden h-1 w-1 rounded-full bg-zinc-700 sm:block" />
-                  {subtitle ? <p className="max-w-2xl truncate text-xs font-bold text-zinc-500">{subtitle}</p> : null}
+                  {subtitle ? <p className="hidden max-w-3xl text-xs font-bold leading-5 text-zinc-500 xl:block">{subtitle}</p> : null}
                 </div>
                 <h1 className="mt-1 text-lg font-black leading-tight sm:text-xl">{title}</h1>
               </div>

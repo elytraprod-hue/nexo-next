@@ -16,6 +16,7 @@ import {
   normalizeWorkspaceState,
   type BusinessProfile,
   type ClientRecord,
+  type FinanceEntry,
   type StudioDocumentRecord,
   type WorkspaceState,
 } from "@/lib/workspace-state";
@@ -25,6 +26,7 @@ import {
   deleteProject,
   insertClient,
   insertDocument,
+  insertFinanceEntry,
   insertProposal,
   insertProject,
   loadCloudWorkspace,
@@ -486,6 +488,37 @@ function useWorkspaceStateModel() {
           });
         }
         return record as StudioDocumentRecord;
+      },
+      addFinanceEntry(input: Omit<FinanceEntry, "id"> & { id?: string }) {
+        const entry: FinanceEntry = {
+          id: input.id ?? createId("finance"),
+          label: input.label,
+          type: input.type,
+          amount: Number(input.amount ?? 0),
+          status: input.status,
+          dueAt: input.dueAt,
+          clientId: input.clientId,
+          projectId: input.projectId,
+        };
+        setState((current) => ({ ...current, financeEntries: [entry, ...current.financeEntries] }));
+
+        if (supabase && workspaceId) {
+          insertFinanceEntry(supabase, workspaceId, entry).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível salvar lançamento financeiro no Supabase.");
+          });
+          logWorkspaceActivity({
+            action: "created",
+            entityId: entry.id,
+            entityType: "finance",
+            metadata: { amount: entry.amount, status: entry.status, clientId: entry.clientId, projectId: entry.projectId },
+            title: `Lançamento financeiro: ${entry.label}`,
+            workspaceId,
+          });
+        }
+
+        return entry;
       },
       togglePrivacy() {
         setState((current) => ({ ...current, privacyMode: !current.privacyMode }));

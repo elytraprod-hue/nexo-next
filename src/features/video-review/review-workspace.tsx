@@ -285,13 +285,13 @@ export function ReviewWorkspace() {
         <Surface className="bg-white/[0.025]">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="text-emerald-300" />
-            <h2 className="text-lg font-black">Maturidade do Review</h2>
+            <h2 className="text-lg font-black">Qualidade do link</h2>
           </div>
           <div className="mt-5 grid gap-3">
             {[
-              ["Ativo", "Upload, link público, comentários com timestamp e status de aprovação."],
-              ["Evolução", "Versões V1/V2, progresso detalhado e HLS/adaptive bitrate."],
-              ["Escala", "Portal do cliente, threads, resolução e histórico formal."],
+              ["Pronto para cliente", "Upload, link público, comentários com timestamp e status de aprovação."],
+              ["Mais fluido", "Versões V1/V2, progresso detalhado e player com CDN/HLS quando conectado."],
+              ["Histórico organizado", "Comentários, aprovação e entregas ficam registrados para a produtora."],
             ].map(([titleItem, text]) => (
               <div key={titleItem} className="premium-card rounded-lg p-4">
                 <p className="text-sm font-black text-white">{titleItem}</p>

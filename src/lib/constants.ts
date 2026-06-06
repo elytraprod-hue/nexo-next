@@ -253,16 +253,20 @@ export const DOC_FIELD_CONFIG: Record<
   },
   proposta: {
     title: "Proposta audiovisual",
-    tone: "Documento comercial direto, com escopo, entregáveis, investimento e condição de aceite.",
+    tone: "Documento comercial pronto para cliente, com escopo, entregáveis, investimento, prazos, condições e aceite.",
     fields: [
       { key: "investment", label: "Investimento", placeholder: "Valor total", type: "number" },
       { key: "paymentTerms", label: "Condições", placeholder: "50% entrada, 50% na entrega" },
       { key: "validUntil", label: "Validade", placeholder: "Data", type: "date" },
       { key: "nextStep", label: "Próximo passo", placeholder: "Aprovar proposta e iniciar briefing" },
+      { key: "deliveryDeadline", label: "Prazo de produção", placeholder: "Ex: 15 dias úteis após briefing aprovado" },
+      { key: "reviewRounds", label: "Rodadas inclusas", placeholder: "Ex: 2 rodadas de ajustes" },
     ],
     areas: [
-      { key: "scope", label: "Escopo incluído", placeholder: "Entregáveis, diárias, versões e revisões" },
-      { key: "extras", label: "Extras e premissas", placeholder: "Deslocamento, urgência, alteração de escopo" },
+      { key: "scope", label: "Escopo incluído", placeholder: "O que será produzido, para qual objetivo e em quais formatos" },
+      { key: "deliverables", label: "Entregáveis", placeholder: "Vídeo principal, cortes, versões, formatos, arquivos finais" },
+      { key: "productionFlow", label: "Fluxo de produção", placeholder: "Briefing, pré-produção, captação, edição, revisão e entrega" },
+      { key: "extras", label: "Extras e premissas", placeholder: "Deslocamento, urgência, alteração de escopo, direitos e itens fora do pacote" },
     ],
   },
   contrato: {
