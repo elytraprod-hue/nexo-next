@@ -13,6 +13,7 @@ import {
   FileText,
   Gauge,
   MessageSquareReply,
+  PanelTop,
   Target,
   WalletCards,
 } from "lucide-react";
@@ -167,6 +168,12 @@ export function Dashboard() {
     { label: "Produção aberta", value: metrics.activeProjects, color: "var(--violet)", href: "/projetos" },
     { label: "Entregas próximas", value: metrics.projectsNearDelivery, color: "var(--orange)", href: "/projetos" },
   ];
+  const commandItems = [
+    { label: "Leads", value: metrics.clientsToAnswer, href: "/clientes", color: "var(--orange)" },
+    { label: "A fechar", value: metrics.proposalsToClose, href: "/clientes", color: "var(--green)" },
+    { label: "Gravações", value: metrics.upcomingShoots, href: "/projetos", color: "var(--violet)" },
+    { label: "Entregas", value: metrics.projectsNearDelivery, href: "/projetos", color: "var(--cyan)" },
+  ];
 
   return (
     <AppShell
@@ -175,7 +182,7 @@ export function Dashboard() {
       subtitle="O que precisa de decisão agora, sem transformar a abertura do sistema em painel administrativo."
       title="Hoje"
     >
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)]">
         <Surface className="overflow-hidden border-orange-400/12 bg-orange-500/[0.035]">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
@@ -212,43 +219,47 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid gap-3 sm:grid-cols-4">
+            {commandItems.map((item) => (
+              <Link key={item.label} className="premium-card rounded-xl p-4 transition hover:bg-white/[0.055]" href={item.href}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">{item.label}</p>
+                <p className="mt-3 text-3xl font-black" style={{ color: item.color }}>{item.value}</p>
+              </Link>
+            ))}
+          </div>
+        </Surface>
+
+        <Surface className="bg-white/[0.025]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Painel de comando</p>
+              <h3 className="mt-2 text-xl font-black">Operação em tempo real</h3>
+            </div>
+            <PanelTop className="text-orange-300" size={28} />
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-emerald-300/16 bg-emerald-300/[0.055] p-4">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300">Maturidade</p>
+                <p className="mt-2 text-4xl font-black">{maturity}%</p>
+              </div>
+              <Gauge className="text-emerald-300" size={34} />
+            </div>
+            <div className="mt-4 h-2 rounded-full bg-white/10">
+              <div className="h-2 rounded-full bg-emerald-300" style={{ width: `${maturity}%` }} />
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-2">
             {compactMetrics.map((metric) => (
               <MetricCard key={metric.label} color={metric.color} href={metric.href} label={metric.label} value={metric.value} />
             ))}
           </div>
         </Surface>
-
-        <Surface>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Score de maturidade</p>
-              <h3 className="mt-2 text-2xl font-black">{maturity}% Studio OS</h3>
-            </div>
-            <Gauge className="text-emerald-300" size={32} />
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {[
-              { label: "CRM com clientes", done: state.clients.length > 0, href: "/clientes" },
-              { label: "Projetos com pipeline", done: state.projects.length > 0, href: "/projetos" },
-              { label: "Documentos no histórico", done: state.documents.length > 0, href: "/studio" },
-              { label: "Financeiro previsível", done: state.financeEntries.length > 0, href: "/financeiro" },
-              { label: "Review profissional", done: true, href: "/review/demo" },
-            ].map((item) => (
-              <Link key={item.label} className="flex items-start justify-between gap-4 border-b border-white/10 pb-3 last:border-b-0" href={item.href}>
-                <div>
-                  <p className={`text-sm font-black ${item.done ? "text-emerald-300" : "text-zinc-200"}`}>{item.done ? "✓" : "○"} {item.label}</p>
-                  <p className="mt-1 text-sm text-zinc-500">{item.done ? "Pronto" : "Resolver em poucos cliques"}</p>
-                </div>
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-orange-300">{item.done ? "OK" : "Abrir"}</span>
-              </Link>
-            ))}
-          </div>
-        </Surface>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <Surface>
           <SectionHeading
             action={
@@ -383,8 +394,13 @@ export function Dashboard() {
         </Surface>
       </section>
 
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <OperationsTimeline state={state} />
+        <SmartAlerts state={state} />
+      </section>
+
       {productionAgenda.length ? (
-        <Surface>
+        <Surface className="bg-white/[0.025]">
           <SectionHeading
             description="Agenda resumida para visualizar gravações e entregas sem abrir o projeto inteiro."
             icon={CalendarDays}
@@ -403,11 +419,6 @@ export function Dashboard() {
           </div>
         </Surface>
       ) : null}
-
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <OperationsTimeline state={state} />
-        <SmartAlerts state={state} />
-      </section>
 
       <div className="flex justify-center">
         <button

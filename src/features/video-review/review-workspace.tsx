@@ -120,19 +120,17 @@ export function ReviewWorkspace() {
       subtitle="Crie um link de aprovação, envie para o cliente e concentre comentários por timestamp."
       title="Review"
     >
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <Surface>
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <Surface className="border-orange-400/12 bg-orange-500/[0.035]">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_260px]">
             <div>
               <Badge color={canCreateRealReview ? "var(--green)" : "var(--orange)"}>
                 {canCreateRealReview ? "Storage conectado" : "Login necessário"}
               </Badge>
-              <h2 className="mt-3 text-2xl font-black">Criar review de vídeo</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-                O caminho principal é upload real. URL/CDN e Drive ficam como alternativas quando o vídeo já está hospedado.
-              </p>
+              <h2 className="mt-3 max-w-3xl text-3xl font-black leading-tight">Review profissional começa pelo vídeo.</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">Suba o arquivo, gere um link público e deixe o cliente comentar no segundo exato sem entrar no painel interno.</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid content-start gap-2">
               {!user ? (
                 <Button variant="ghost" onClick={actions.signInWithGithub}>
                   Entrar GitHub
@@ -145,19 +143,7 @@ export function ReviewWorkspace() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 rounded-2xl border border-orange-400/16 bg-orange-500/[0.075] p-4 md:grid-cols-[1fr_auto] md:items-center">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">Fluxo recomendado</p>
-              <h3 className="mt-2 text-xl font-black leading-tight">Suba o arquivo, gere o link e envie para aprovação.</h3>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">O cliente não vê o painel interno. Ele assiste, comenta no tempo exato e aprova.</p>
-            </div>
-            <Button disabled={busy} onClick={createRealReview}>
-              {busy ? <Loader2 className="animate-spin" size={17} /> : <UploadCloud size={17} />}
-              {busy ? "Processando" : "Criar link"}
-            </Button>
-          </div>
-
-          <div className="mt-6 grid gap-3 md:grid-cols-3">
+          <div className="mt-6 flex flex-wrap gap-2">
             {[
               { id: "upload", label: "Upload real", text: "Mais claro para cliente e equipe.", icon: UploadCloud },
               { id: "url", label: "URL / CDN", text: "MP4, HLS ou link público.", icon: Link2 },
@@ -168,22 +154,21 @@ export function ReviewWorkspace() {
               return (
                 <button
                   key={item.id}
-                  className={`focus-ring rounded-xl border p-4 text-left transition ${
+                  className={`focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text-sm font-black transition ${
                     active ? "border-orange-400 bg-orange-500/15 text-orange-100" : "border-white/10 bg-white/[0.045] text-zinc-400 hover:text-white"
                   }`}
                   type="button"
                   onClick={() => setMode(item.id as SourceMode)}
                 >
-                  <Icon size={22} />
-                  <p className="mt-4 font-black">{item.label}</p>
-                  <p className="mt-2 text-xs font-bold leading-5 opacity-70">{item.text}</p>
+                  <Icon size={17} />
+                  {item.label}
                 </button>
               );
             })}
           </div>
 
-          <div className="mt-6 rounded-xl border border-white/[0.075] bg-black/18 p-4">
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          <div className="mt-6 rounded-[24px] border border-white/[0.075] bg-black/22 p-4">
+            <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                 Nome do entregável
                 <input
@@ -221,10 +206,10 @@ export function ReviewWorkspace() {
               {mode === "upload" ? (
                 <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                   Arquivo de vídeo
-                  <span className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-orange-400/35 bg-orange-500/10 px-4 text-center text-sm font-bold normal-case tracking-normal text-orange-100 transition hover:bg-orange-500/15">
-                    <UploadCloud size={26} />
-                    <span>{fileName || "Clique para selecionar MP4, MOV ou arquivo de vídeo"}</span>
-                    <span className="text-xs text-orange-200/70">O upload mostra progresso textual e cria link público real.</span>
+                  <span className="flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-orange-400/35 bg-orange-500/10 px-6 text-center text-sm font-bold normal-case tracking-normal text-orange-100 transition hover:bg-orange-500/15">
+                    <UploadCloud size={34} />
+                    <span className="text-base">{fileName || "Selecionar vídeo"}</span>
+                    <span className="max-w-md text-xs leading-5 text-orange-200/70">MP4, MOV ou arquivo de vídeo. Depois de criado, o cliente recebe um link público de aprovação.</span>
                     <input
                       className="sr-only"
                       type="file"
@@ -263,7 +248,7 @@ export function ReviewWorkspace() {
             ) : null}
           </div>
 
-          <div className="mt-5 grid gap-3 rounded-xl border border-emerald-300/16 bg-emerald-300/[0.055] p-4 lg:grid-cols-[1fr_auto_auto] lg:items-center">
+          <div className="mt-5 grid gap-3 rounded-xl border border-emerald-300/16 bg-emerald-300/[0.055] p-4 lg:grid-cols-[1fr_auto_auto_auto] lg:items-center">
             <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">
                 {createdReviewUrl ? "Link público real" : "Prévia de link"}
@@ -273,6 +258,10 @@ export function ReviewWorkspace() {
             <Button variant="ghost" onClick={copyLink}>
               <Copy size={17} />
               {copied ? "Copiado" : "Copiar"}
+            </Button>
+            <Button disabled={busy} onClick={createRealReview}>
+              {busy ? <Loader2 className="animate-spin" size={17} /> : <UploadCloud size={17} />}
+              {busy ? "Processando" : "Criar link"}
             </Button>
             <Link className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-black transition ${busy ? "pointer-events-none bg-zinc-700 text-zinc-400" : "bg-orange-500 text-black hover:bg-orange-400"}`} href={reviewUrl}>
               Abrir review

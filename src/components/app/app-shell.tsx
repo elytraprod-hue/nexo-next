@@ -61,7 +61,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
   const [bootVisible, setBootVisible] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [intelHidden, setIntelHidden] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const { state, metrics, ready, user, syncStatus, syncMessage, actions, workspaceMemberStatus, workspaceRole } = useWorkspaceState();
 
   useEffect(() => {
@@ -195,7 +195,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
         </div>
       ) : null}
 
-      <div className="mx-auto flex min-h-screen w-full max-w-[1480px] gap-5 px-3 py-4 sm:px-5 lg:px-6">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1600px] gap-5 px-3 py-4 sm:px-5 lg:px-6">
         <aside
           className={cn(
             "hidden shrink-0 flex-col gap-3 rounded-[22px] border border-white/[0.075] bg-black/42 p-3 shadow-2xl backdrop-blur-2xl transition-[width] duration-300 md:flex",
@@ -314,12 +314,15 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col gap-5">
-          <header className="sticky top-4 z-30 rounded-[22px] border border-white/[0.075] bg-black/58 p-4 shadow-2xl backdrop-blur-2xl">
+          <header className="sticky top-4 z-30 rounded-[22px] border border-white/[0.075] bg-black/50 p-3 shadow-2xl backdrop-blur-2xl">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-400">{eyebrow}</p>
-                <h1 className="mt-1 text-xl font-black leading-tight sm:text-2xl">{title}</h1>
-                {subtitle ? <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-400">{subtitle}</p> : null}
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-400">{eyebrow}</p>
+                  <span className="hidden h-1 w-1 rounded-full bg-zinc-700 sm:block" />
+                  {subtitle ? <p className="max-w-2xl truncate text-xs font-bold text-zinc-500">{subtitle}</p> : null}
+                </div>
+                <h1 className="mt-1 text-lg font-black leading-tight sm:text-xl">{title}</h1>
               </div>
 
               <div className="flex items-center gap-2">
