@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Surface } from "@/components/ui/surface";
 import { ReviewPlayer } from "@/features/video-review/review-player";
-import { createPublicVideoComment, getPublicReviewByToken, updatePublicReviewStatus } from "@/services/review-service";
+import { createPublicVideoComment, getPublicReviewByToken, normalizeReviewVideoUrl, updatePublicReviewStatus } from "@/services/review-service";
 import type { ReviewDeliverable, ReviewStatus, VideoComment } from "@/types/review";
 
 const fallbackDeliverable = (token: string, initialVideoUrl?: string, initialTitle?: string, initialVideoSource: "direct" | "hls" | "drive" = "direct"): ReviewDeliverable => ({
   id: "demo",
   title: initialTitle || (token === "demo" ? "Review demo NEXO" : "Review de vídeo"),
   version: 1,
-  videoUrl: initialVideoUrl || (token === "demo" ? "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" : ""),
+  videoUrl: normalizeReviewVideoUrl(initialVideoUrl || (token === "demo" ? "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" : ""), initialVideoSource),
   videoSource: initialVideoSource,
   durationSeconds: token === "demo" ? 15 : undefined,
   reviewToken: token,

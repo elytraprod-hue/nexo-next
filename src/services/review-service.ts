@@ -89,6 +89,29 @@ export function inferReviewVideoSource(url: string, fallback: ReviewDeliverable[
   return fallback;
 }
 
+export function getGoogleDriveFileId(url: string) {
+  const trimmed = url.trim();
+  if (!trimmed.includes("drive.google.com")) return "";
+
+  const fileMatch = trimmed.match(/\/file\/d\/([^/]+)/);
+  if (fileMatch?.[1]) return fileMatch[1];
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.searchParams.get("id") ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function normalizeReviewVideoUrl(url: string, source: ReviewDeliverable["videoSource"]) {
+  const trimmed = url.trim();
+  if (source !== "drive") return trimmed;
+
+  const fileId = getGoogleDriveFileId(trimmed);
+  return fileId ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}` : trimmed;
+}
+
 function sanitizeFileName(name: string) {
   const [base = "video", ...extensionParts] = name.split(".");
   const extension = extensionParts.length ? `.${extensionParts.pop()?.toLowerCase()}` : "";

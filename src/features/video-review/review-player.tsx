@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, CirclePause, Clock3, Copy, GitBranch, Link2, MessageSquare, Play, Send, ThumbsUp, X } from "lucide-react";
+import { AlertTriangle, Check, CirclePause, Clock3, Copy, GitBranch, Link2, Loader2, MessageSquare, Play, Send, ThumbsUp, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatTimecode } from "@/lib/utils/timecode";
@@ -33,6 +33,8 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
   const [isPlaying, setIsPlaying] = useState(false);
   const [copied, setCopied] = useState(false);
   const [formError, setFormError] = useState("");
+  const [videoLoading, setVideoLoading] = useState(Boolean(deliverable.videoUrl));
+  const [videoError, setVideoError] = useState("");
 
   const sortedComments = useMemo(
     () => [...comments].sort((a, b) => Number(a.timestampSeconds ?? 0) - Number(b.timestampSeconds ?? 0)),
@@ -58,6 +60,8 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
     let active = true;
     let hls: { destroy: () => void } | undefined;
     const isHls = deliverable.videoUrl.toLowerCase().includes(".m3u8");
+    setVideoLoading(true);
+    setVideoError("");
 
     if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
       import("hls.js")
@@ -133,19 +137,28 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
   const progress = duration ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
 
   return (
-    <section className="review-grid grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <section className="review-grid grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="grid gap-4">
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+        <div className="relative overflow-hidden rounded-[24px] border border-white/[0.075] bg-black shadow-[0_28px_120px_rgba(0,0,0,0.52)]">
           {deliverable.videoUrl ? (
             <video
               ref={videoRef}
               className="aspect-video w-full bg-black"
               controls
               playsInline
+              onCanPlay={() => {
+                setVideoLoading(false);
+                setVideoError("");
+              }}
+              onError={() => {
+                setVideoLoading(false);
+                setVideoError("Não foi possível carregar este vídeo. Confira se o link está público ou use upload real/CDN.");
+              }}
               onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || deliverable.durationSeconds || 0)}
               onPause={() => setIsPlaying(false)}
               onPlay={() => setIsPlaying(true)}
               onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+              onWaiting={() => setVideoLoading(true)}
             />
           ) : (
             <div className="grid aspect-video place-items-center bg-zinc-950 p-8 text-center">
@@ -158,9 +171,24 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
               </div>
             </div>
           )}
+          {videoLoading && deliverable.videoUrl ? (
+            <div className="absolute inset-0 grid place-items-center bg-black/55 text-center backdrop-blur-sm">
+              <div>
+                <Loader2 className="mx-auto animate-spin text-orange-300" size={34} />
+                <p className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-zinc-200">Carregando vídeo</p>
+                <p className="mt-2 text-xs font-bold text-zinc-400">Preparando player, timeline e marcadores.</p>
+              </div>
+            </div>
+          ) : null}
         </div>
+        {videoError ? (
+          <div className="rounded-2xl border border-red-400/25 bg-red-400/10 p-4 text-sm font-bold leading-6 text-red-100">
+            <AlertTriangle className="mb-2 text-red-300" size={18} />
+            {videoError}
+          </div>
+        ) : null}
 
-        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+        <div className="premium-card rounded-2xl p-4">
           <div className="flex items-center justify-between gap-3 text-sm font-bold text-zinc-400">
             <span>{formatTimecode(currentTime)}</span>
             <span>{formatTimecode(duration)}</span>
@@ -211,7 +239,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
           ) : null}
         </div>
 
-        <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+        <div className="premium-card grid gap-3 rounded-2xl p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Comentar neste momento</p>
@@ -241,7 +269,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
             </div>
           ) : null}
           {formError ? <div className="rounded-lg border border-red-400/25 bg-red-400/10 p-3 text-sm font-bold text-red-200">{formError}</div> : null}
-          <div className="grid gap-3 xl:grid-cols-[160px_190px_1fr_auto]">
+          <div className="grid gap-3 xl:grid-cols-[150px_180px_1fr_auto]">
             <input
               className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
               placeholder="Seu nome"
@@ -274,7 +302,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
       </div>
 
       <aside className="grid content-start gap-4">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+        <div className="premium-card rounded-2xl p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Entregável</p>
@@ -297,7 +325,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
               <span className="text-emerald-300">{sortedComments.length}</span>
             </div>
           </div>
-          <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
+          <div className="mt-3 rounded-xl border border-white/[0.075] bg-black/20 p-3">
             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
               <Link2 size={14} />
               Link público
@@ -326,7 +354,7 @@ export function ReviewPlayer({ deliverable, comments, onCreateComment, onStatusC
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+        <div className="premium-card rounded-2xl p-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-black">Comentários</h2>
             <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-zinc-300">{sortedComments.length}</span>

@@ -195,10 +195,10 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
         </div>
       ) : null}
 
-      <div className="mx-auto flex min-h-screen w-full max-w-[1360px] gap-4 px-3 py-3 sm:px-4 lg:px-5">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1480px] gap-5 px-3 py-4 sm:px-5 lg:px-6">
         <aside
           className={cn(
-            "hidden shrink-0 flex-col gap-3 rounded-2xl border border-white/10 bg-black/38 p-3 shadow-2xl backdrop-blur-2xl transition-[width] duration-300 md:flex",
+            "hidden shrink-0 flex-col gap-3 rounded-[22px] border border-white/[0.075] bg-black/42 p-3 shadow-2xl backdrop-blur-2xl transition-[width] duration-300 md:flex",
             sidebarCollapsed ? "w-[76px]" : "w-[236px]",
           )}
         >
@@ -206,7 +206,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             <Link
               href="/dashboard"
               className={cn(
-                "flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-orange-400/20 bg-orange-500/10 p-3",
+                "flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-orange-400/15 bg-orange-500/[0.08] p-3",
                 sidebarCollapsed ? "justify-center" : "",
               )}
               title="NEXO Studio OS"
@@ -222,7 +222,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             {!sidebarCollapsed ? (
               <button
                 aria-label="Recolher lateral"
-                className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-zinc-400 transition hover:text-white"
+                className="premium-control grid size-11 place-items-center rounded-xl text-zinc-400 transition hover:text-white"
                 type="button"
                 onClick={() => setSidebarCollapsed(true)}
               >
@@ -234,7 +234,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
           {sidebarCollapsed ? (
             <button
               aria-label="Expandir lateral"
-              className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-zinc-400 transition hover:text-white"
+              className="premium-control grid size-11 place-items-center rounded-xl text-zinc-400 transition hover:text-white"
               type="button"
               onClick={() => setSidebarCollapsed(false)}
             >
@@ -242,7 +242,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </button>
           ) : null}
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-2">
+          <div className="premium-card rounded-xl p-2">
             {!sidebarCollapsed ? <p className="px-2 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Acesso rápido</p> : null}
             <nav className="mt-3 grid gap-1">
               {navigationItems.map((item) => {
@@ -258,8 +258,8 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
                       "flex min-h-10 items-center rounded-lg text-sm font-black transition",
                       sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3",
                       active
-                        ? "os-left-accent border border-orange-400/30 bg-orange-500/15 text-orange-300 shadow-[0_12px_30px_rgba(255,106,0,0.12)]"
-                        : "border border-transparent text-zinc-400 hover:border-white/10 hover:bg-white/[0.07] hover:text-white",
+                        ? "os-left-accent border border-orange-400/24 bg-orange-500/[0.12] text-orange-300 shadow-[0_12px_30px_rgba(255,106,0,0.1)]"
+                        : "border border-transparent text-zinc-500 hover:border-white/10 hover:bg-white/[0.055] hover:text-white",
                     )}
                   >
                     <Icon size={18} />
@@ -284,7 +284,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </Link>
           ) : null}
 
-          <div className={cn("rounded-xl border border-white/10 bg-white/[0.035] p-3", sidebarCollapsed ? "grid justify-center gap-2" : "")}>
+          <div className={cn("premium-card rounded-xl p-3", sidebarCollapsed ? "grid justify-center gap-2" : "")}>
             {!sidebarCollapsed ? <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Status</p> : null}
             {!sidebarCollapsed ? <div className="mt-3 flex items-center justify-between gap-3 text-xs font-black">
               <span className="text-zinc-400">Workspace</span>
@@ -294,7 +294,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </div> : null}
             <button
               className={cn(
-                "inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] text-xs font-black text-zinc-300",
+                "premium-control inline-flex min-h-9 items-center justify-center gap-2 rounded-lg text-xs font-black text-zinc-300",
                 sidebarCollapsed ? "size-10" : "mt-3 w-full",
               )}
               type="button"
@@ -306,25 +306,25 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
             </button>
           </div>
 
-          {!sidebarCollapsed ? <div className="mt-auto rounded-xl border border-cyan-300/15 bg-cyan-300/8 p-3">
+          {!sidebarCollapsed ? <div className="mt-auto rounded-xl border border-cyan-300/12 bg-cyan-300/[0.055] p-3">
             <Sparkles className="text-cyan-300" size={18} />
             <p className="mt-3 text-sm font-black">Regra do produto</p>
             <p className="mt-1 text-xs leading-5 text-zinc-400">Menos cliques, menos digitação, mais operação pronta.</p>
           </div> : null}
         </aside>
 
-        <section className="flex min-w-0 flex-1 flex-col gap-4">
-          <header className="sticky top-3 z-30 rounded-2xl border border-white/10 bg-black/50 p-3 shadow-2xl backdrop-blur-2xl">
+        <section className="flex min-w-0 flex-1 flex-col gap-5">
+          <header className="sticky top-4 z-30 rounded-[22px] border border-white/[0.075] bg-black/58 p-4 shadow-2xl backdrop-blur-2xl">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-400">{eyebrow}</p>
-                <h1 className="mt-1 text-xl font-black leading-tight sm:text-3xl">{title}</h1>
+                <h1 className="mt-1 text-xl font-black leading-tight sm:text-2xl">{title}</h1>
                 {subtitle ? <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-400">{subtitle}</p> : null}
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  className="hidden min-h-10 min-w-[240px] items-center gap-2 rounded-lg border border-white/10 bg-white/[0.055] px-3 text-left text-sm font-bold text-zinc-500 transition hover:text-zinc-300 xl:flex"
+                  className="premium-control hidden min-h-10 min-w-[240px] items-center gap-2 rounded-lg px-3 text-left text-sm font-bold text-zinc-500 transition hover:text-zinc-300 xl:flex"
                   type="button"
                   onClick={() => setCommandOpen(true)}
                 >
@@ -359,7 +359,7 @@ export function AppShell({ children, eyebrow = "Studio OS", title = "NEXO Centra
           </header>
 
           {intel.length && !intelHidden ? (
-            <section className="notification-slide flex flex-col gap-2 rounded-2xl border border-orange-400/20 bg-orange-500/10 p-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+            <section className="notification-slide flex flex-col gap-2 rounded-[22px] border border-orange-400/16 bg-orange-500/[0.075] p-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <span className="grid size-9 place-items-center rounded-lg bg-orange-500/15 text-orange-300">
                   <Bell size={17} />

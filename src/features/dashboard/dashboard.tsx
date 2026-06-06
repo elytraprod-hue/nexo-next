@@ -175,14 +175,14 @@ export function Dashboard() {
       subtitle="O que precisa de decisão agora, sem transformar a abertura do sistema em painel administrativo."
       title="Hoje"
     >
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Surface className="overflow-hidden">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <Surface className="overflow-hidden border-orange-400/12 bg-orange-500/[0.035]">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <Badge color={syncStatus === "cloud" ? "var(--green)" : "var(--orange)"}>
                 {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
               </Badge>
-              <h2 className="mt-3 max-w-3xl text-3xl font-black leading-tight sm:text-4xl">Bom trabalho, {displayName}.</h2>
+              <h2 className="mt-3 max-w-3xl text-2xl font-black leading-tight sm:text-3xl">Bom trabalho, {displayName}.</h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">&ldquo;{quote}&rdquo;</p>
             </div>
             <button
@@ -195,11 +195,11 @@ export function Dashboard() {
             </button>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-orange-400/25 bg-orange-500/10 p-4 sm:p-5">
+          <div className="mt-6 rounded-2xl border border-orange-400/18 bg-black/24 p-4 sm:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em]" style={{ color: primaryAction.color }}>O que fazer agora</p>
-                <h3 className="mt-2 text-2xl font-black leading-tight">{primaryAction.title}</h3>
+                <h3 className="mt-2 text-xl font-black leading-tight sm:text-2xl">{primaryAction.title}</h3>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">{primaryAction.text}</p>
               </div>
               <Link
@@ -212,7 +212,7 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {compactMetrics.map((metric) => (
               <MetricCard key={metric.label} color={metric.color} href={metric.href} label={metric.label} value={metric.value} />
             ))}
@@ -248,7 +248,7 @@ export function Dashboard() {
         </Surface>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <Surface>
           <SectionHeading
             action={
@@ -265,7 +265,7 @@ export function Dashboard() {
 
           <div className="mt-5 grid gap-3">
             {openProposals.length ? openProposals.slice(0, 3).map((proposal) => (
-              <Link key={proposal.id} className="rounded-xl border border-emerald-300/15 bg-emerald-300/8 p-4 transition hover:bg-emerald-300/12" href="/clientes">
+              <Link key={proposal.id} className="premium-card rounded-xl p-4 transition hover:bg-emerald-300/10" href="/clientes">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">{getClientName(state, proposal.clientId)}</p>
@@ -278,7 +278,7 @@ export function Dashboard() {
                 </p>
               </Link>
             )) : nextClient ? (
-              <div className="rounded-xl border border-orange-400/20 bg-orange-500/10 p-4">
+              <div className="rounded-xl border border-orange-400/18 bg-orange-500/[0.075] p-4">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300">Próximo cliente</p>
                 <h3 className="mt-2 text-xl font-black">{nextClient.name}</h3>
                 <p className="mt-3 text-sm leading-6 text-zinc-300">{nextClient.nextAction}</p>
@@ -304,15 +304,15 @@ export function Dashboard() {
           </div>
 
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+            <div className="premium-card rounded-xl p-3">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Leads</p>
               <p className="mt-2 text-2xl font-black text-orange-300">{metrics.clientsToAnswer}</p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+            <div className="premium-card rounded-xl p-3">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">A fechar</p>
               <p className="mt-2 text-2xl font-black text-emerald-300">{metrics.proposalsToClose}</p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+            <div className="premium-card rounded-xl p-3">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">A receber</p>
               <p className="mt-2 truncate text-2xl font-black text-yellow-300">{formatCurrency(metrics.receivable, privacy)}</p>
             </div>

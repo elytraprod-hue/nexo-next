@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, CalendarDays, CheckCircle2, Clapperboard, ExternalLink, FileText, LayoutGrid, ListChecks, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckCircle2, Clapperboard, ExternalLink, FileText, LayoutGrid, ListChecks, Plus, Trash2, X } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export function ProjectsPage() {
   const [priority, setPriority] = useState<ProjectRecord["priority"]>("normal");
   const [linksText, setLinksText] = useState("");
   const [view, setView] = useState<"lista" | "kanban">("lista");
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
   const [stagePrompt, setStagePrompt] = useState<StagePrompt>(null);
   const [lastDocumentTitle, setLastDocumentTitle] = useState("");
@@ -89,6 +90,7 @@ export function ProjectsPage() {
     setExpandedProjectId(project.id);
     setStagePrompt({ projectId: project.id, docType: "briefing", label: "Briefing" });
     setLastDocumentTitle("");
+    setProjectModalOpen(false);
   }
 
   function handleTogglePipeline(projectId: string, key: PipelineKey) {
@@ -305,14 +307,50 @@ export function ProjectsPage() {
       subtitle="Um projeto nasce com pipeline, entregáveis, briefing base e checklist. Nada de começar do zero."
       title="Produção"
     >
-      <section className="grid gap-4 xl:grid-cols-[400px_minmax(0,1fr)]">
+      <section className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
         <div className="grid gap-4">
           <Surface>
             <div className="flex items-center gap-3">
               <Clapperboard className="text-violet-300" />
-              <h2 className="text-xl font-black">Novo projeto por preset</h2>
+              <h2 className="text-xl font-black">Novo projeto</h2>
             </div>
-            <p className="mt-2 text-sm leading-6 text-zinc-500">Escolha cliente + tipo de produção. O resto nasce preenchido.</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">Abra uma janela focada para criar projeto sem esmagar o pipeline na mesma tela.</p>
+            <Button className="mt-5 w-full" disabled={!canCreateProject} onClick={() => setProjectModalOpen(true)}>
+              <Plus size={17} />
+              Criar projeto guiado
+            </Button>
+            {!state.clients.length ? (
+              <div className="mt-4">
+                <EmptyState
+                  description="Projetos precisam nascer vinculados a um cliente para manter briefing, aprovação, financeiro e documentos conectados."
+                  icon={Clapperboard}
+                  label="Pré-requisito"
+                  title="Crie um cliente antes do projeto"
+                />
+              </div>
+            ) : null}
+          </Surface>
+
+          {projectModalOpen ? (
+            <div className="workspace-overlay fixed inset-0 z-50 grid place-items-center p-3 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Novo projeto guiado">
+              <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto">
+                <Surface className="workspace-window border-violet-300/20">
+                  <div className="flex items-center gap-3">
+                    <Clapperboard className="text-violet-300" />
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-300">Projeto guiado</p>
+                      <h2 className="mt-1 text-xl font-black">Novo projeto por preset</h2>
+                    </div>
+                    <button
+                      aria-label="Fechar projeto"
+                      className="premium-control ml-auto grid size-10 place-items-center rounded-lg text-zinc-400 transition hover:text-white"
+                      type="button"
+                      onClick={() => setProjectModalOpen(false)}
+                    >
+                      <X size={17} />
+                    </button>
+                  </div>
+                  <p className="mt-4 text-sm leading-6 text-zinc-500">Escolha cliente + tipo de produção. O resto nasce preenchido.</p>
 
             <div className="mt-5 grid gap-3">
               <select
@@ -444,21 +482,15 @@ export function ProjectsPage() {
                 />
               </label>
 
-              {!state.clients.length ? (
-                <EmptyState
-                  description="Projetos precisam nascer vinculados a um cliente para manter briefing, aprovação, financeiro e documentos conectados."
-                  icon={Clapperboard}
-                  label="Pré-requisito"
-                  title="Crie um cliente antes do projeto"
-                />
-              ) : null}
-
               <Button className="w-full" disabled={!canCreateProject} onClick={addProject}>
                 <Plus size={17} />
                 {ready ? "Criar projeto completo" : "Restaurando workspace"}
               </Button>
             </div>
-          </Surface>
+                </Surface>
+              </div>
+            </div>
+          ) : null}
 
           <Surface>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Preset selecionado</p>

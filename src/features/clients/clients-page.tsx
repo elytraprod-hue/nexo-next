@@ -385,14 +385,14 @@ export function ClientsPage() {
           </Surface>
 
           {clientModalOpen ? (
-            <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-3 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Novo contato guiado">
+            <div className="workspace-overlay fixed inset-0 z-50 grid place-items-center p-3 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Novo contato guiado">
               <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto">
-                <Surface className="border-orange-400/25">
+                <Surface className="workspace-window border-orange-400/20">
             <div className="flex items-center gap-3">
               <UserRoundPlus className="text-orange-400" />
               <h2 className="text-xl font-black">Novo contato guiado</h2>
               <button
-                className="ml-auto grid size-10 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-zinc-400 transition hover:text-white"
+                className="premium-control ml-auto grid size-10 place-items-center rounded-lg text-zinc-400 transition hover:text-white"
                 type="button"
                 aria-label="Fechar cadastro"
                 onClick={() => setClientModalOpen(false)}

@@ -85,7 +85,7 @@ const flow = [
 
 export function LandingPage() {
   return (
-    <main className="min-h-screen bg-[#080808] text-zinc-100">
+    <main className="app-bg min-h-screen text-zinc-100">
       <section
         className="relative min-h-[88svh] overflow-hidden bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8"
         style={{
@@ -109,7 +109,7 @@ export function LandingPage() {
               Planos
             </Link>
             <Link className="rounded-lg bg-orange-500 px-4 py-3 text-sm font-black text-black transition hover:bg-orange-400" href="/dashboard">
-              Entrar GitHub
+              Entrar
             </Link>
           </div>
         </nav>
@@ -127,19 +127,19 @@ export function LandingPage() {
                 <ArrowRight size={17} />
               </Link>
               <Link className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-white/15 bg-black/35 px-5 text-sm font-black text-white backdrop-blur-xl transition hover:bg-white/10" href="/dashboard">
-                Entrar com GitHub
+                Acessar workspace
               </Link>
             </div>
           </div>
 
-          <aside className="hidden rounded-2xl border border-white/10 bg-black/45 p-4 shadow-2xl backdrop-blur-2xl lg:block">
+          <aside className="glass-panel premium-surface hidden rounded-[24px] border-white/[0.075] bg-black/42 p-5 shadow-2xl backdrop-blur-2xl lg:block">
             <div className="flex items-center justify-between gap-4">
               <p className="text-xs font-black uppercase tracking-[0.24em] text-zinc-400">Modelo de operação</p>
               <span className="rounded-full border border-orange-400/30 bg-orange-500/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-orange-300">ao vivo</span>
             </div>
             <div className="mt-5 grid gap-3">
               {flow.map(([title, text], index) => (
-                <div key={title} className="grid grid-cols-[48px_1fr_10px] items-center gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-3">
+                <div key={title} className="premium-card grid grid-cols-[48px_1fr_10px] items-center gap-3 rounded-xl p-3">
                   <span className="grid size-11 place-items-center rounded-lg bg-orange-500/15 text-sm font-black text-orange-300">{String(index + 1).padStart(2, "0")}</span>
                   <span>
                     <span className="block text-sm font-black text-white">{title}</span>
@@ -155,7 +155,7 @@ export function LandingPage() {
                 ["PDF", "docs prontos"],
                 ["REV", "aprovação"],
               ].map(([value, label]) => (
-                <div key={value} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                <div key={value} className="premium-card rounded-xl p-3">
                   <p className="text-xl font-black text-white">{value}</p>
                   <p className="mt-1 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-500">{label}</p>
                 </div>
@@ -176,7 +176,7 @@ export function LandingPage() {
             {modules.map((item) => {
               const Icon = item.icon;
               return (
-                <article key={item.title} className="rounded-xl border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl">
+                <article key={item.title} className="premium-card rounded-xl p-5 backdrop-blur-xl">
                   <Icon className="text-orange-300" size={24} />
                   <h3 className="mt-5 text-xl font-black">{item.title}</h3>
                   <p className="mt-3 text-sm font-bold leading-6 text-zinc-500">{item.text}</p>
@@ -189,7 +189,7 @@ export function LandingPage() {
 
       <section className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[1fr_1.2fr]">
-          <div className="rounded-2xl border border-orange-400/20 bg-orange-500/10 p-5">
+          <div className="rounded-[24px] border border-orange-400/18 bg-orange-500/[0.075] p-6">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-orange-300">Diferencial</p>
             <h2 className="mt-3 text-3xl font-black leading-tight">Não é CRM genérico. É a mesa de operação da produtora.</h2>
           </div>
@@ -202,7 +202,7 @@ export function LandingPage() {
               "Dados da produtora como fonte central",
               "Próximas ações sempre visíveis",
             ].map((item) => (
-              <div key={item} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-4">
+              <div key={item} className="premium-card flex items-center gap-3 rounded-xl p-4">
                 <CheckCircle2 className="shrink-0 text-emerald-300" size={20} />
                 <p className="font-black">{item}</p>
               </div>
@@ -220,7 +220,7 @@ export function LandingPage() {
               <article
                 key={plan.name}
                 className={`relative overflow-hidden rounded-xl border p-5 backdrop-blur-xl ${
-                  plan.highlight ? "border-orange-400/45 bg-orange-500/10 shadow-[0_24px_90px_rgba(249,115,22,0.10)]" : "border-white/10 bg-white/[0.045]"
+                  plan.highlight ? "border-orange-400/34 bg-orange-500/[0.075] shadow-[0_24px_90px_rgba(249,115,22,0.10)]" : "border-white/[0.075] bg-white/[0.032]"
                 }`}
               >
                 <div className="relative">
@@ -251,7 +251,7 @@ export function LandingPage() {
           </div>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link className="inline-flex min-h-12 items-center gap-2 rounded-lg bg-orange-500 px-5 text-sm font-black text-black transition hover:bg-orange-400" href="/dashboard">
-              Entrar com GitHub
+              Acessar workspace
               <ArrowRight size={17} />
             </Link>
             <a
