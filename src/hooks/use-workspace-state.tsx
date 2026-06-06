@@ -30,6 +30,7 @@ import {
   insertProposal,
   insertProject,
   loadCloudWorkspace,
+  updateClientFileLinks,
   updateBusinessProfile as updateCloudBusinessProfile,
   updateProjectChecklist,
   updateProjectPipeline,
@@ -264,6 +265,59 @@ function useWorkspaceStateModel() {
           });
         }
       },
+      addClientFileLink(clientId: string, link: string) {
+        let updatedClient: ClientRecord | undefined;
+        setState((current) => {
+          const clients = current.clients.map((client) => {
+            if (client.id !== clientId) return client;
+            updatedClient = { ...client, fileLinks: [link, ...client.fileLinks] };
+            return updatedClient;
+          });
+          return { ...current, clients };
+        });
+
+        if (supabase && workspaceId && updatedClient) {
+          updateClientFileLinks(supabase, clientId, updatedClient.fileLinks).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível salvar link da pasta do cliente.");
+          });
+          logWorkspaceActivity({
+            action: "created",
+            entityId: clientId,
+            entityType: "client",
+            metadata: { link },
+            title: `Link salvo na pasta de ${updatedClient.name}`,
+            workspaceId,
+          });
+        }
+      },
+      removeClientFileLink(clientId: string, linkIndex: number) {
+        let updatedClient: ClientRecord | undefined;
+        setState((current) => {
+          const clients = current.clients.map((client) => {
+            if (client.id !== clientId) return client;
+            updatedClient = { ...client, fileLinks: client.fileLinks.filter((_, index) => index !== linkIndex) };
+            return updatedClient;
+          });
+          return { ...current, clients };
+        });
+
+        if (supabase && workspaceId && updatedClient) {
+          updateClientFileLinks(supabase, clientId, updatedClient.fileLinks).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível remover link da pasta do cliente.");
+          });
+          logWorkspaceActivity({
+            action: "deleted",
+            entityId: clientId,
+            entityType: "client",
+            title: `Link removido da pasta de ${updatedClient.name}`,
+            workspaceId,
+          });
+        }
+      },
       addProject(input: Parameters<typeof buildProject>[0]) {
         const project = buildProject(input);
         setState((current) => ({ ...current, projects: [project, ...current.projects] }));
@@ -357,6 +411,35 @@ function useWorkspaceStateModel() {
         }
 
         return createdProject;
+      },
+      updateProposalStatus(proposalId: string, status: WorkspaceState["proposals"][number]["status"]) {
+        let updatedProposal: WorkspaceState["proposals"][number] | undefined;
+        setState((current) => {
+          const proposals = current.proposals.map((proposal) => {
+            if (proposal.id !== proposalId) return proposal;
+            updatedProposal = { ...proposal, status, updatedAt: new Date().toISOString() };
+            return updatedProposal;
+          });
+          return { ...current, proposals };
+        });
+
+        if (supabase && workspaceId && updatedProposal) {
+          updateProposal(supabase, updatedProposal).catch((error) => {
+            console.error(error);
+            setSyncStatus("error");
+            setSyncMessage("Não foi possível atualizar etapa da proposta.");
+          });
+          logWorkspaceActivity({
+            action: "updated",
+            entityId: updatedProposal.id,
+            entityType: "finance",
+            metadata: { status: updatedProposal.status, amount: updatedProposal.amount },
+            title: `Proposta atualizada: ${updatedProposal.title}`,
+            workspaceId,
+          });
+        }
+
+        return updatedProposal;
       },
       removeProject(projectId: string) {
         setState((current) => ({

@@ -7,7 +7,10 @@ import {
   Building2,
   CheckCircle2,
   ContactRound,
+  ExternalLink,
+  FolderOpen,
   History,
+  Link as LinkIcon,
   Mail,
   Phone,
   Plus,
@@ -38,6 +41,7 @@ const leadSources = ["Indicação", "Instagram", "WhatsApp", "Site", "Evento", "
 const acquisitionChannels = ["WhatsApp", "Instagram", "E-mail", "Ligação", "Reunião", "Formulário"];
 const contactReasons = ["Quer orçamento", "Precisa recorrência", "Aprovação de proposta", "Parceria/permutas", "Produção urgente", "Banco de fornecedores"];
 const attentionOwners = ["Eu", "Produtor responsável", "Sócio comercial", "Atendimento externo"];
+const fileLinkTypes = ["Pasta Drive", "Entrega final", "Vídeo aprovado", "Review", "Contrato", "Referência", "Financeiro"];
 const statusLabels: Record<ClientRecord["status"], string> = {
   lead: "Em conversa",
   ativo: "Ativo",
@@ -53,6 +57,7 @@ const stepMeta = [
 ] as const;
 
 type StepId = (typeof stepMeta)[number]["id"];
+type ProposalStatus = ReturnType<typeof useWorkspaceState>["state"]["proposals"][number]["status"];
 
 type ClientDraft = {
   name: string;
@@ -123,6 +128,33 @@ function splitList(value: string) {
     .filter(Boolean);
 }
 
+function encodeFileLink(type: string, title: string, url: string) {
+  return JSON.stringify({ type, title, url, createdAt: new Date().toISOString() });
+}
+
+function parseFileLink(raw: string) {
+  try {
+    const parsed = JSON.parse(raw) as { type?: string; title?: string; url?: string; createdAt?: string };
+    if (parsed.url) {
+      return {
+        type: parsed.type || "Link",
+        title: parsed.title || parsed.url,
+        url: parsed.url,
+        createdAt: parsed.createdAt,
+      };
+    }
+  } catch {
+    // Links antigos eram salvos como texto puro.
+  }
+
+  return {
+    type: "Link",
+    title: raw,
+    url: raw,
+    createdAt: undefined,
+  };
+}
+
 function maskDocument(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 14);
   if (digits.length <= 11) {
@@ -178,6 +210,7 @@ export function ClientsPage() {
   const { state, actions, ready } = useWorkspaceState();
   const [segment, setSegment] = useState<RelationshipType | "todos">("todos");
   const [clientModalOpen, setClientModalOpen] = useState(false);
+  const [proposalModalOpen, setProposalModalOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
   const [activeStep, setActiveStep] = useState<StepId>("identidade");
   const [draft, setDraft] = useState<ClientDraft>(initialDraft);
@@ -194,6 +227,9 @@ export function ClientsPage() {
   const [proposalExpectedClose, setProposalExpectedClose] = useState(addDaysInput(3));
   const [proposalValidUntil, setProposalValidUntil] = useState(addDaysInput(7));
   const [lastProposalTitle, setLastProposalTitle] = useState("");
+  const [fileLinkType, setFileLinkType] = useState(fileLinkTypes[0]);
+  const [fileLinkTitle, setFileLinkTitle] = useState("");
+  const [fileLinkUrl, setFileLinkUrl] = useState("");
 
   const filteredClients = useMemo(
     () => (segment === "todos" ? state.clients : state.clients.filter((client) => client.relationshipType === segment)),
@@ -207,6 +243,12 @@ export function ClientsPage() {
   const canCreateClient = ready && Boolean(draft.name.trim()) && hasContactPath && Boolean(draft.primaryContact.trim() || draft.personType === "pessoa_fisica");
   const openProposals = state.proposals.filter((proposal) => proposal.status === "draft" || proposal.status === "sent");
   const forecastAmount = openProposals.reduce((sum, proposal) => sum + proposal.amount, 0);
+  const proposalColumns = [
+    { id: "draft", label: "Rascunho", helper: "Ideia comercial ainda sendo montada." },
+    { id: "sent", label: "Enviada", helper: "Cliente recebeu e precisa de follow-up." },
+    { id: "approved", label: "Aprovada", helper: "Pronta para virar projeto." },
+    { id: "lost", label: "Perdida", helper: "Registrar motivo e aprender." },
+  ] as const;
 
   function patchDraft(input: Partial<ClientDraft>) {
     setDraft((current) => ({ ...current, ...input }));
@@ -279,6 +321,14 @@ export function ClientsPage() {
     setClientModalOpen(false);
   }
 
+  function addFileLinkForClient(client: ClientRecord) {
+    const cleanUrl = fileLinkUrl.trim();
+    if (!ready || !cleanUrl || !/^https?:\/\//i.test(cleanUrl)) return;
+    actions.addClientFileLink(client.id, encodeFileLink(fileLinkType, fileLinkTitle.trim() || fileLinkType, cleanUrl));
+    setFileLinkTitle("");
+    setFileLinkUrl("");
+  }
+
   function addPlaybookClient(playbookId: (typeof NICHE_PLAYBOOKS)[number]["id"], nextAction: string) {
     if (!ready) return;
     const playbook = NICHE_PLAYBOOKS.find((item) => item.id === playbookId);
@@ -349,12 +399,22 @@ export function ClientsPage() {
     setProposalAmount("");
     setProposalExpectedClose(addDaysInput(3));
     setProposalValidUntil(addDaysInput(7));
+    setProposalModalOpen(false);
   }
 
   function convertProposal(proposalId: string) {
     if (!ready) return;
     const project = actions.convertProposalToProject(proposalId);
     if (project) setLastProjectTitle(project.title);
+  }
+
+  function moveProposal(proposalId: string, status: ProposalStatus) {
+    if (!ready) return;
+    if (status === "approved") {
+      convertProposal(proposalId);
+      return;
+    }
+    actions.updateProposalStatus(proposalId, status);
   }
 
   return (
@@ -364,6 +424,109 @@ export function ClientsPage() {
       subtitle="Cadastro completo em etapas, modelos de nicho e próxima ação pronta para virar produção."
       title="Comercial"
     >
+      {proposalModalOpen ? (
+        <div className="workspace-overlay fixed inset-0 z-50 grid place-items-center p-3 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Nova proposta">
+          <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto">
+            <Surface className="workspace-window border-emerald-300/20">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <Badge color="var(--green)">Proposta comercial</Badge>
+                  <h2 className="mt-3 text-2xl font-black leading-tight">Nova proposta em janela própria</h2>
+                  <p className="mt-2 text-sm leading-6 text-zinc-500">Escolha cliente, serviço, escopo, valor e prazo sem poluir o pipeline.</p>
+                </div>
+                <button className="premium-control grid size-11 place-items-center rounded-lg text-zinc-400 hover:text-white" type="button" onClick={() => setProposalModalOpen(false)} aria-label="Fechar proposta">
+                  <X size={17} />
+                </button>
+              </div>
+
+              <div className="mt-6 grid gap-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Field label="Cliente">
+                    <select
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                      value={proposalClientId}
+                      onChange={(event) => setProposalClientId(event.target.value)}
+                    >
+                      {state.clients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Serviço">
+                    <select
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                      value={proposalPresetId}
+                      onChange={(event) => {
+                        setProposalPresetId(event.target.value);
+                        const preset = AUDIOVISUAL_PRESETS.find((item) => item.id === event.target.value);
+                        if (preset) setProposalAmount(String(preset.value));
+                      }}
+                    >
+                      {AUDIOVISUAL_PRESETS.map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+                <Field label="Título">
+                  <input
+                    className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                    placeholder={`Proposta - ${selectedProposalPreset.title}`}
+                    value={proposalTitle}
+                    onChange={(event) => setProposalTitle(event.target.value)}
+                  />
+                </Field>
+                <Field label="Escopo">
+                  <textarea
+                    className="focus-ring min-h-32 rounded-lg border border-white/10 bg-black/20 p-3 text-sm font-bold leading-6 text-white placeholder:text-zinc-600"
+                    placeholder={`${selectedProposalPreset.service}: ${selectedProposalPreset.deliverables.join(", ")}`}
+                    value={proposalScope}
+                    onChange={(event) => setProposalScope(event.target.value)}
+                  />
+                </Field>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <Field label="Valor">
+                    <input
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
+                      placeholder={String(selectedProposalPreset.value)}
+                      value={proposalAmount}
+                      onChange={(event) => setProposalAmount(event.target.value)}
+                    />
+                  </Field>
+                  <Field label="Fechamento provável">
+                    <input
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                      type="date"
+                      value={proposalExpectedClose}
+                      onChange={(event) => setProposalExpectedClose(event.target.value)}
+                    />
+                  </Field>
+                  <Field label="Validade">
+                    <input
+                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                      type="date"
+                      value={proposalValidUntil}
+                      onChange={(event) => setProposalValidUntil(event.target.value)}
+                    />
+                  </Field>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setProposalModalOpen(false)}>Cancelar</Button>
+                  <Button disabled={!ready || !proposalClientId} onClick={createProposal}>
+                    <Plus size={17} />
+                    Criar proposta
+                  </Button>
+                </div>
+              </div>
+            </Surface>
+          </div>
+        </div>
+      ) : null}
+
       <section className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
         <div className="grid gap-4">
           <Surface>
@@ -763,134 +926,84 @@ export function ClientsPage() {
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Pipeline comercial</p>
-                <h2 className="mt-2 text-2xl font-black">Propostas e orçamentos</h2>
-                <p className="mt-2 text-sm font-bold leading-6 text-zinc-500">Crie proposta, acompanhe previsão e converta aprovado em projeto sem redigitar.</p>
+                <h2 className="mt-2 text-2xl font-black">Oportunidades</h2>
+                <p className="mt-2 text-sm font-bold leading-6 text-zinc-500">Acompanhe propostas por etapa. A criação abre em janela para manter a tela limpa.</p>
               </div>
-              <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 p-3 text-right">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">Previsão aberta</p>
-                <p className="mt-1 text-xl font-black text-emerald-200">{formatCurrency(forecastAmount, state.privacyMode)}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-right">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">Previsão aberta</p>
+                  <p className="mt-1 text-xl font-black text-emerald-200">{formatCurrency(forecastAmount, state.privacyMode)}</p>
+                </div>
+                <Button disabled={!ready || !state.clients.length} onClick={() => setProposalModalOpen(true)}>
+                  <Plus size={17} />
+                  Nova proposta
+                </Button>
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1fr]">
-              <div className="grid gap-3 rounded-xl border border-white/10 bg-black/18 p-4">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <Field label="Cliente">
-                    <select
-                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
-                      value={proposalClientId}
-                      onChange={(event) => setProposalClientId(event.target.value)}
-                    >
-                      {state.clients.map((client) => (
-                        <option key={client.id} value={client.id}>
-                          {client.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Serviço">
-                    <select
-                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
-                      value={proposalPresetId}
-                      onChange={(event) => {
-                        setProposalPresetId(event.target.value);
-                        const preset = AUDIOVISUAL_PRESETS.find((item) => item.id === event.target.value);
-                        if (preset) setProposalAmount(String(preset.value));
-                      }}
-                    >
-                      {AUDIOVISUAL_PRESETS.map((preset) => (
-                        <option key={preset.id} value={preset.id}>
-                          {preset.label}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
-                <Field label="Título">
-                  <input
-                    className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
-                    placeholder={`Proposta - ${selectedProposalPreset.title}`}
-                    value={proposalTitle}
-                    onChange={(event) => setProposalTitle(event.target.value)}
-                  />
-                </Field>
-                <Field label="Escopo">
-                  <textarea
-                    className="focus-ring min-h-28 rounded-lg border border-white/10 bg-black/20 p-3 text-sm font-bold leading-6 text-white placeholder:text-zinc-600"
-                    placeholder={`${selectedProposalPreset.service}: ${selectedProposalPreset.deliverables.join(", ")}`}
-                    value={proposalScope}
-                    onChange={(event) => setProposalScope(event.target.value)}
-                  />
-                </Field>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <Field label="Valor">
-                    <input
-                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold text-white placeholder:text-zinc-600"
-                      placeholder={String(selectedProposalPreset.value)}
-                      value={proposalAmount}
-                      onChange={(event) => setProposalAmount(event.target.value)}
-                    />
-                  </Field>
-                  <Field label="Fechamento provável">
-                    <input
-                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
-                      type="date"
-                      value={proposalExpectedClose}
-                      onChange={(event) => setProposalExpectedClose(event.target.value)}
-                    />
-                  </Field>
-                  <Field label="Validade">
-                    <input
-                      className="focus-ring min-h-11 rounded-lg border border-white/10 bg-black/25 px-4 text-sm font-bold normal-case tracking-normal text-white"
-                      type="date"
-                      value={proposalValidUntil}
-                      onChange={(event) => setProposalValidUntil(event.target.value)}
-                    />
-                  </Field>
-                </div>
-                <Button disabled={!ready || !proposalClientId} onClick={createProposal}>
-                  <Plus size={17} />
-                  Criar proposta
-                </Button>
-                {lastProposalTitle ? <p className="text-sm font-black text-emerald-300">Proposta criada: {lastProposalTitle}</p> : null}
-              </div>
+            {lastProposalTitle ? <p className="mt-4 text-sm font-black text-emerald-300">Proposta criada: {lastProposalTitle}</p> : null}
 
-              <div className="grid content-start gap-3">
-                {state.proposals.length ? (
-                  state.proposals.slice(0, 6).map((proposal) => (
-                    <article key={proposal.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div>
-                          <Badge color={proposal.status === "approved" ? "var(--green)" : proposal.status === "lost" ? "#ef4444" : "var(--orange)"}>
-                            {proposal.status === "draft" ? "rascunho" : proposal.status === "sent" ? "enviada" : proposal.status === "approved" ? "aprovada" : proposal.status === "lost" ? "perdida" : "expirada"}
-                          </Badge>
-                          <h3 className="mt-3 font-black">{proposal.title}</h3>
-                          <p className="mt-1 text-sm text-zinc-500">{getClientName(state, proposal.clientId)}</p>
-                        </div>
-                        <p className="text-lg font-black text-emerald-300">{formatCurrency(proposal.amount, state.privacyMode)}</p>
+            <div className="mt-5 grid gap-3 xl:grid-cols-4">
+              {proposalColumns.map((column) => {
+                const items = state.proposals.filter((proposal) => proposal.status === column.id);
+                return (
+                  <div
+                    key={column.id}
+                    className="min-h-[260px] rounded-2xl border border-white/10 bg-black/18 p-3 transition hover:border-orange-400/20"
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      const proposalId = event.dataTransfer.getData("proposal-id");
+                      if (proposalId) moveProposal(proposalId, column.id);
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">{column.label}</p>
+                        <p className="mt-1 text-xs font-bold leading-5 text-zinc-600">{column.helper}</p>
                       </div>
-                      <p className="mt-3 text-sm font-bold leading-6 text-zinc-400">{proposal.scope}</p>
-                      <div className="mt-4 grid gap-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500 md:grid-cols-2">
-                        <span>Fecha: {new Date(proposal.expectedCloseDate).toLocaleDateString("pt-BR")}</span>
-                        <span>Validade: {new Date(proposal.validUntil).toLocaleDateString("pt-BR")}</span>
-                      </div>
-                      {proposal.status !== "approved" ? (
-                        <Button className="mt-4" disabled={!ready} variant="success" onClick={() => convertProposal(proposal.id)}>
-                          Converter em projeto
-                          <ArrowRight size={17} />
-                        </Button>
-                      ) : null}
-                    </article>
-                  ))
-                ) : (
-                  <EmptyState
-                    description="Crie a primeira proposta para transformar conversa em previsão comercial e projeto aprovado."
-                    icon={BriefcaseBusiness}
-                    label="Comercial"
-                    title="Nenhuma proposta ainda"
-                  />
-                )}
-              </div>
+                      <span className="rounded-full bg-white/10 px-2 py-1 text-xs font-black text-zinc-400">{items.length}</span>
+                    </div>
+                    <div className="mt-4 grid gap-2">
+                      {items.length ? items.map((proposal) => (
+                        <article
+                          key={proposal.id}
+                          className="cursor-grab rounded-xl border border-white/10 bg-white/[0.04] p-3 active:cursor-grabbing"
+                          draggable
+                          onDragStart={(event) => {
+                            event.dataTransfer.setData("proposal-id", proposal.id);
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h3 className="truncate text-sm font-black text-white">{proposal.title}</h3>
+                              <p className="mt-1 truncate text-xs font-bold text-zinc-500">{getClientName(state, proposal.clientId)}</p>
+                            </div>
+                            <p className="shrink-0 text-sm font-black text-emerald-300">{formatCurrency(proposal.amount, state.privacyMode)}</p>
+                          </div>
+                          <p className="mt-3 line-clamp-2 text-xs font-bold leading-5 text-zinc-500">{proposal.scope}</p>
+                          <div className="mt-3 flex items-center justify-between gap-2 text-[11px] font-black uppercase tracking-[0.12em] text-zinc-600">
+                            <span>{new Date(proposal.expectedCloseDate).toLocaleDateString("pt-BR")}</span>
+                            {proposal.status !== "approved" && proposal.status !== "lost" ? (
+                              <button className="text-emerald-300" type="button" onClick={() => convertProposal(proposal.id)}>
+                                Virar projeto
+                              </button>
+                            ) : null}
+                          </div>
+                        </article>
+                      )) : (
+                        <button
+                          className="min-h-32 rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-center text-sm font-bold leading-6 text-zinc-600 transition hover:border-orange-400/30 hover:text-zinc-300"
+                          type="button"
+                          onClick={() => setProposalModalOpen(true)}
+                        >
+                          {column.id === "draft" ? "Criar primeira proposta" : "Arraste propostas para esta etapa em breve"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </Surface>
 
@@ -1007,6 +1120,71 @@ export function ClientsPage() {
                         ))}
                       </div>
                     ) : null}
+
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-300">
+                            <FolderOpen size={16} />
+                            Pasta do cliente
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-zinc-400">
+                            Links de Drive, entregas, vídeos aprovados, contratos e referências sem pesar o Supabase.
+                          </p>
+                        </div>
+                        <Badge color="var(--cyan)">{selectedClient.fileLinks.length} links</Badge>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 lg:grid-cols-[0.8fr_1fr_1.2fr_auto]">
+                        <Field label="Tipo">
+                          <select className="input-shell" value={fileLinkType} onChange={(event) => setFileLinkType(event.target.value)}>
+                            {fileLinkTypes.map((type) => (
+                              <option key={type}>{type}</option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field label="Nome">
+                          <input className="input-shell" placeholder="Ex: Entrega V2 aprovada" value={fileLinkTitle} onChange={(event) => setFileLinkTitle(event.target.value)} />
+                        </Field>
+                        <Field label="URL">
+                          <input className="input-shell" placeholder="https://drive.google.com/..." value={fileLinkUrl} onChange={(event) => setFileLinkUrl(event.target.value)} />
+                        </Field>
+                        <Button className="self-end" disabled={!ready || !/^https?:\/\//i.test(fileLinkUrl.trim())} onClick={() => addFileLinkForClient(selectedClient)}>
+                          <Plus size={17} />
+                          Salvar
+                        </Button>
+                      </div>
+
+                      {selectedClient.fileLinks.length ? (
+                        <div className="mt-4 grid gap-2">
+                          {selectedClient.fileLinks.map((rawLink, index) => {
+                            const fileLink = parseFileLink(rawLink);
+                            return (
+                              <div key={`${rawLink}-${index}`} className="flex flex-col gap-3 rounded-xl border border-white/10 bg-black/25 p-3 md:flex-row md:items-center md:justify-between">
+                                <div className="min-w-0">
+                                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">{fileLink.type}</p>
+                                  <p className="mt-1 truncate text-sm font-black text-white">{fileLink.title}</p>
+                                  <p className="mt-1 truncate text-xs font-bold text-zinc-500">{fileLink.url}</p>
+                                </div>
+                                <div className="flex shrink-0 gap-2">
+                                  <a className="focus-ring grid size-10 place-items-center rounded-lg border border-cyan-300/20 bg-cyan-300/10 text-cyan-200 transition hover:bg-cyan-300/20" href={fileLink.url} rel="noreferrer" target="_blank" aria-label={`Abrir ${fileLink.title}`}>
+                                    <ExternalLink size={16} />
+                                  </a>
+                                  <button className="focus-ring grid size-10 place-items-center rounded-lg border border-red-400/20 bg-red-400/10 text-red-300 transition hover:bg-red-400/20" type="button" aria-label={`Remover ${fileLink.title}`} onClick={() => actions.removeClientFileLink(selectedClient.id, index)}>
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="mt-4 rounded-xl border border-dashed border-white/12 bg-black/20 p-4 text-sm font-bold leading-6 text-zinc-500">
+                          <LinkIcon className="mb-2 text-cyan-300" size={18} />
+                          Salve o link da pasta do Drive, versões aprovadas, entregas finais e contratos deste cliente.
+                        </div>
+                      )}
+                    </div>
                   </aside>
                 ) : null}
               </div>

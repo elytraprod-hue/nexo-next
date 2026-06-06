@@ -13,7 +13,7 @@ import { createReviewDeliverable, createReviewToken, inferReviewVideoSource, nor
 type SourceMode = "url" | "drive" | "upload";
 
 export function ReviewWorkspace() {
-  const { state, workspaceId, syncStatus, user, supabaseConfigured, actions } = useWorkspaceState();
+  const { workspaceId, syncStatus, user, supabaseConfigured, actions } = useWorkspaceState();
   const [mode, setMode] = useState<SourceMode>("upload");
   const [title, setTitle] = useState("Primeiro corte");
   const [videoUrl, setVideoUrl] = useState("");
@@ -127,15 +127,15 @@ export function ReviewWorkspace() {
       subtitle="Crie um link de aprovação, envie para o cliente e concentre comentários por timestamp."
       title="Review"
     >
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <Surface className="border-orange-400/12 bg-orange-500/[0.035]">
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_260px]">
+      <section className="grid gap-4">
+        <Surface className="border-orange-400/12 bg-white/[0.026]">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
             <div>
               <Badge color={canCreateRealReview ? "var(--green)" : "var(--orange)"}>
                 {canCreateRealReview ? "Storage conectado" : "Login necessário"}
               </Badge>
-              <h2 className="mt-3 max-w-3xl text-3xl font-black leading-tight">Review profissional começa pelo vídeo.</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">Suba o arquivo, gere um link público e deixe o cliente comentar no segundo exato sem entrar no painel interno.</p>
+              <h2 className="mt-3 max-w-3xl text-2xl font-black leading-tight">Criar link de aprovação</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Escolha a origem do vídeo, gere o link público e envie para o cliente comentar por timestamp.</p>
             </div>
             <div className="grid content-start gap-2">
               {!user ? (
@@ -150,32 +150,35 @@ export function ReviewWorkspace() {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-5 grid gap-2 md:grid-cols-3">
             {[
-              { id: "upload", label: "Upload real", text: "Mais claro para cliente e equipe.", icon: UploadCloud },
-              { id: "url", label: "URL / CDN", text: "MP4, HLS ou link público.", icon: Link2 },
-              { id: "drive", label: "Google Drive", text: "Precisa estar público.", icon: Film },
+              { id: "upload", label: "Upload", text: "Arquivo local para Storage.", icon: UploadCloud },
+              { id: "url", label: "CDN/HLS", text: "MP4, Mux, Bunny ou .m3u8.", icon: Link2 },
+              { id: "drive", label: "Drive", text: "Link compartilhável público.", icon: Film },
             ].map((item) => {
               const Icon = item.icon;
               const active = mode === item.id;
               return (
                 <button
                   key={item.id}
-                  className={`focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text-sm font-black transition ${
+                  className={`focus-ring flex min-h-16 items-center gap-3 rounded-xl border px-4 text-left text-sm font-black transition ${
                     active ? "border-orange-400 bg-orange-500/15 text-orange-100" : "border-white/10 bg-white/[0.045] text-zinc-400 hover:text-white"
                   }`}
                   type="button"
                   onClick={() => setMode(item.id as SourceMode)}
                 >
                   <Icon size={17} />
-                  {item.label}
+                  <span>
+                    <span className="block">{item.label}</span>
+                    <span className="mt-1 block text-xs font-bold text-zinc-500">{item.text}</span>
+                  </span>
                 </button>
               );
             })}
           </div>
 
-          <div className="mt-6 rounded-[24px] border border-white/[0.075] bg-black/22 p-4">
-            <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <div className="mt-5 rounded-[18px] border border-white/[0.075] bg-black/22 p-4">
+            <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                 Nome do entregável
                 <input
@@ -213,7 +216,7 @@ export function ReviewWorkspace() {
               {mode === "upload" ? (
                 <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                   Arquivo de vídeo
-                  <span className="flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-orange-400/35 bg-orange-500/10 px-6 text-center text-sm font-bold normal-case tracking-normal text-orange-100 transition hover:bg-orange-500/15">
+                  <span className="flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-orange-400/35 bg-orange-500/10 px-6 text-center text-sm font-bold normal-case tracking-normal text-orange-100 transition hover:bg-orange-500/15">
                     <UploadCloud size={34} />
                     <span className="text-base">{fileName || "Selecionar vídeo"}</span>
                     <span className="max-w-md text-xs leading-5 text-orange-200/70">MP4, MOV ou arquivo de vídeo. Depois de criado, o cliente recebe um link público de aprovação.</span>
@@ -234,8 +237,8 @@ export function ReviewWorkspace() {
             </div>
 
             {mode === "upload" ? (
-              <div className="mt-4 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-6 text-cyan-100">
-                O arquivo é salvo no bucket <strong>review-videos</strong>. Para vídeos pesados e escala de mercado, o próximo salto é trocar essa origem por Mux, Bunny Stream ou Cloudflare Stream com HLS/adaptive bitrate.
+              <div className="mt-4 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-3 text-sm leading-6 text-cyan-100">
+                Upload real no Supabase Storage. Para projetos pesados, use CDN/HLS.
               </div>
             ) : null}
             {mode === "drive" && driveUrl ? (
@@ -279,30 +282,6 @@ export function ReviewWorkspace() {
               Abrir review
               <ArrowRight size={17} />
             </Link>
-          </div>
-        </Surface>
-
-        <Surface className="bg-white/[0.025]">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="text-emerald-300" />
-            <h2 className="text-lg font-black">Qualidade do link</h2>
-          </div>
-          <div className="mt-5 grid gap-3">
-            {[
-              ["Pronto para cliente", "Upload, link público, comentários com timestamp e status de aprovação."],
-              ["Mais fluido", "Versões V1/V2, progresso detalhado e player com CDN/HLS quando conectado."],
-              ["Histórico organizado", "Comentários, aprovação e entregas ficam registrados para a produtora."],
-            ].map(([titleItem, text]) => (
-              <div key={titleItem} className="premium-card rounded-lg p-4">
-                <p className="text-sm font-black text-white">{titleItem}</p>
-                <p className="mt-2 text-sm leading-6 text-zinc-500">{text}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.035] p-4">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Workspace</p>
-            <p className="mt-2 text-sm font-bold text-zinc-300">{state.businessProfile.name}</p>
-            <p className="mt-1 text-xs font-bold text-zinc-500">{canCreateRealReview ? "Pronto para salvar reviews reais." : "Entre com GitHub para persistir upload e comentários."}</p>
           </div>
         </Surface>
       </section>

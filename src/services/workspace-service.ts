@@ -481,6 +481,11 @@ export async function insertClient(supabase: SupabaseClient, workspaceId: string
   if (error) throw error;
 }
 
+export async function updateClientFileLinks(supabase: SupabaseClient, clientId: string, fileLinks: string[]) {
+  const { error } = await supabase.from("clients").update({ file_links: fileLinks }).eq("id", clientId);
+  if (error) throw error;
+}
+
 export async function updateBusinessProfile(supabase: SupabaseClient, workspaceId: string, profile: BusinessProfile) {
   const { error } = await supabase
     .from("workspaces")

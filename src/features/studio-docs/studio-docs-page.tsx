@@ -180,24 +180,33 @@ export function StudioDocsPage() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              {STUDIO_DOCUMENTS.map((item) => (
-                <button
-                  key={item.id}
-                  className={`focus-ring min-h-[86px] rounded-lg border p-3 text-left transition ${docType === item.id ? "border-cyan-300 bg-cyan-300/10" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07]"}`}
-                  type="button"
-                  onClick={() => {
-                    setDocType(item.id);
-                    setPayload({});
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-sm font-black leading-tight">{item.label}</h3>
-                    <span className="mt-1 h-2 w-8 rounded-full" style={{ background: item.color }} />
+            <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.032] p-4">
+              <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-end">
+                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Tipo de documento
+                  <select
+                    className="focus-ring min-h-12 rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case tracking-normal text-white"
+                    value={docType}
+                    onChange={(event) => {
+                      setDocType(event.target.value as StudioDocId);
+                      setPayload({});
+                    }}
+                  >
+                    {STUDIO_DOCUMENTS.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+                  <div className="flex items-center gap-3">
+                    <span className="h-2 w-10 rounded-full" style={{ background: doc.color }} />
+                    <p className="text-sm font-black text-white">{doc.label}</p>
                   </div>
-                  <p className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-zinc-500">{item.description}</p>
-                </button>
-              ))}
+                  <p className="mt-2 text-sm font-bold leading-6 text-zinc-500">{doc.description}</p>
+                </div>
+              </div>
             </div>
 
             <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.035] p-4">
