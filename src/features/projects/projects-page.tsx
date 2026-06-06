@@ -39,6 +39,7 @@ export function ProjectsPage() {
   const [linksText, setLinksText] = useState("");
   const [view, setView] = useState<"lista" | "kanban">("lista");
   const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
   const [stagePrompt, setStagePrompt] = useState<StagePrompt>(null);
   const [lastDocumentTitle, setLastDocumentTitle] = useState("");
@@ -54,6 +55,7 @@ export function ProjectsPage() {
     }),
     [state.projects],
   );
+  const selectedProject = state.projects.find((project) => project.id === selectedProjectId) ?? state.projects[0] ?? null;
 
   function splitList(value: string) {
     return value
@@ -88,6 +90,7 @@ export function ProjectsPage() {
     setPriority("normal");
     setLinksText("");
     setExpandedProjectId(project.id);
+    setSelectedProjectId(project.id);
     setStagePrompt({ projectId: project.id, docType: "briefing", label: "Briefing" });
     setLastDocumentTitle("");
     setProjectModalOpen(false);
@@ -555,18 +558,139 @@ export function ProjectsPage() {
             </div>
 
             {view === "lista" ? (
-              <div className="mt-6 grid gap-4">
-                {state.projects.length ? (
-                  state.projects.map((project) => renderProjectCard(project))
-                ) : (
+              state.projects.length ? (
+                <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)]">
+                  <div className="grid content-start gap-2">
+                    {state.projects.map((project) => {
+                      const { done, percent, nextStep } = getProjectProgress(project);
+                      const active = selectedProject?.id === project.id;
+                      return (
+                        <button
+                          key={project.id}
+                          className={`focus-ring rounded-xl border p-3 text-left transition ${active ? "border-violet-300/45 bg-violet-300/12" : "border-white/10 bg-white/[0.032] hover:bg-white/[0.055]"}`}
+                          type="button"
+                          onClick={() => setSelectedProjectId(project.id)}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-black text-white">{project.title}</p>
+                              <p className="mt-1 truncate text-xs font-bold text-zinc-500">{getClientName(state, project.clientId)}</p>
+                            </div>
+                            <Badge color={project.priority === "urgente" ? "#ef4444" : project.priority === "alta" ? "var(--orange)" : "var(--cyan)"}>
+                              {project.priority}
+                            </Badge>
+                          </div>
+                          <div className="mt-3 h-1.5 rounded-full bg-white/10">
+                            <div className="h-1.5 rounded-full bg-violet-400" style={{ width: `${percent}%` }} />
+                          </div>
+                          <div className="mt-3 flex items-center justify-between gap-3 text-xs font-bold text-zinc-500">
+                            <span>{done}/{PRODUCTION_PIPELINE.length} etapas</span>
+                            <span>{nextStep ? nextStep.label : "Entrega"}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {selectedProject ? (() => {
+                    const { done, percent, nextStep } = getProjectProgress(selectedProject);
+                    const checklistDone = selectedProject.checklist.filter((item) => item.done).length;
+                    return (
+                      <aside className="premium-card min-h-[620px] rounded-2xl p-5">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                          <div>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge color="var(--violet)">{selectedProject.type}</Badge>
+                              <Badge color="#facc15"><CalendarDays size={13} />{formatDate(selectedProject.deliveryDate || selectedProject.deadline)}</Badge>
+                              <Badge color="var(--green)">{done}/{PRODUCTION_PIPELINE.length} etapas</Badge>
+                            </div>
+                            <h3 className="mt-4 text-3xl font-black leading-tight">{selectedProject.title}</h3>
+                            <p className="mt-2 text-sm font-bold text-zinc-500">{getClientName(state, selectedProject.clientId)}</p>
+                          </div>
+                          <button aria-label={`Excluir ${selectedProject.title}`} className="grid size-10 shrink-0 place-items-center rounded-lg border border-red-400/20 bg-red-400/10 text-red-300 transition hover:bg-red-400/20" type="button" onClick={() => removeProject(selectedProject)}>
+                            <Trash2 size={17} />
+                          </button>
+                        </div>
+
+                        <div className="mt-6">
+                          <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                            <span>Pipeline</span>
+                            <span>{percent}%</span>
+                          </div>
+                          <div className="mt-2 h-2 rounded-full bg-white/10">
+                            <div className="h-2 rounded-full bg-violet-400" style={{ width: `${percent}%` }} />
+                          </div>
+                        </div>
+
+                        <div className="mt-5 grid gap-2 sm:grid-cols-3">
+                          {PRODUCTION_PIPELINE.map((step) => (
+                            <button
+                              key={step.key}
+                              className={`focus-ring rounded-lg border px-3 py-3 text-left text-xs font-black transition ${selectedProject.pipeline[step.key] ? "border-emerald-300/30 bg-emerald-300/15 text-emerald-300" : "border-white/10 bg-white/[0.04] text-zinc-500"}`}
+                              type="button"
+                              disabled={!ready}
+                              onClick={() => handleTogglePipeline(selectedProject.id, step.key)}
+                            >
+                              {step.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                          {nextStep ? (
+                            <Button disabled={!ready} variant="success" onClick={() => handleTogglePipeline(selectedProject.id, nextStep.key)}>
+                              Avançar para {nextStep.label}
+                              <ArrowRight size={17} />
+                            </Button>
+                          ) : (
+                            <Button disabled={!ready} variant="success" onClick={() => setStagePrompt({ projectId: selectedProject.id, docType: "entrega", label: "Entrega" })}>
+                              Preparar entrega
+                              <FileText size={17} />
+                            </Button>
+                          )}
+                          <Button disabled={!ready} variant="ghost" onClick={() => setExpandedProjectId(expandedProjectId === selectedProject.id ? null : selectedProject.id)}>
+                            <ListChecks size={17} />
+                            Checklist {checklistDone}/{selectedProject.checklist.length}
+                          </Button>
+                        </div>
+
+                        <div className="mt-5 grid gap-3 md:grid-cols-3">
+                          {[
+                            ["Gravação", selectedProject.shootDate ? formatDate(selectedProject.shootDate) : "Não definida"],
+                            ["Entrega", formatDate(selectedProject.deliveryDate || selectedProject.deadline)],
+                            ["Equipe", selectedProject.crew.length ? selectedProject.crew.join(", ") : "Não definida"],
+                          ].map(([label, value]) => (
+                            <div key={label} className="premium-card rounded-xl p-3">
+                              <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{label}</p>
+                              <p className="mt-1 text-sm font-bold leading-6 text-zinc-300">{value}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {expandedProjectId === selectedProject.id ? (
+                          <div className="mt-5 grid gap-2 md:grid-cols-2">
+                            {selectedProject.checklist.map((item, index) => (
+                              <button key={`${selectedProject.id}-${item.text}`} className={`focus-ring flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition ${item.done ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200" : "border-white/10 bg-white/[0.035] text-zinc-400"}`} type="button" disabled={!ready} onClick={() => actions.toggleChecklist(selectedProject.id, index)}>
+                                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-current text-xs">{item.done ? "✓" : ""}</span>
+                                {item.text}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </aside>
+                    );
+                  })() : null}
+                </div>
+              ) : (
+                <div className="mt-6">
                   <EmptyState
                     description="Escolha um cliente e um preset audiovisual. O projeto nasce com pipeline, checklist e documento sugerido."
                     icon={Clapperboard}
                     label="Produção"
                     title="Nenhum projeto criado ainda"
                   />
-                )}
-              </div>
+                </div>
+              )
             ) : (
               <div className="mt-6 grid gap-4 xl:grid-cols-4">
                 {statusColumns.map((status) => (

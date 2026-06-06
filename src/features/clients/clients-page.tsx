@@ -178,6 +178,7 @@ export function ClientsPage() {
   const { state, actions, ready } = useWorkspaceState();
   const [segment, setSegment] = useState<RelationshipType | "todos">("todos");
   const [clientModalOpen, setClientModalOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState("");
   const [activeStep, setActiveStep] = useState<StepId>("identidade");
   const [draft, setDraft] = useState<ClientDraft>(initialDraft);
   const [relationshipType, setRelationshipType] = useState<RelationshipType>("cliente");
@@ -198,6 +199,7 @@ export function ClientsPage() {
     () => (segment === "todos" ? state.clients : state.clients.filter((client) => client.relationshipType === segment)),
     [segment, state.clients],
   );
+  const selectedClient = filteredClients.find((client) => client.id === selectedClientId) ?? filteredClients[0] ?? null;
   const selectedPreset = AUDIOVISUAL_PRESETS.find((preset) => preset.id === presetId) ?? AUDIOVISUAL_PRESETS[1];
   const selectedProposalPreset = AUDIOVISUAL_PRESETS.find((preset) => preset.id === proposalPresetId) ?? AUDIOVISUAL_PRESETS[1];
   const completedCore = [draft.name, draft.whatsapp || draft.phone || draft.email, draft.leadSource, quickAction].filter(Boolean).length;
@@ -893,100 +895,103 @@ export function ClientsPage() {
           </Surface>
 
           <Surface>
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Carteira</p>
-              <h2 className="mt-2 text-2xl font-black">{filteredClients.length} contatos</h2>
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Carteira</p>
+                <h2 className="mt-2 text-2xl font-black">{filteredClients.length} contatos</h2>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button className={`rounded-lg px-3 py-2 text-xs font-black ${segment === "todos" ? "bg-orange-500 text-black" : "bg-white/[0.06] text-zinc-400"}`} type="button" onClick={() => setSegment("todos")}>Todos</button>
+                {RELATIONSHIP_TYPES.map((type) => (
+                  <button key={type.id} className={`rounded-lg px-3 py-2 text-xs font-black ${segment === type.id ? "bg-orange-500 text-black" : "bg-white/[0.06] text-zinc-400"}`} type="button" onClick={() => setSegment(type.id)}>
+                    {type.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                className={`rounded-lg px-3 py-2 text-xs font-black ${segment === "todos" ? "bg-orange-500 text-black" : "bg-white/[0.06] text-zinc-400"}`}
-                type="button"
-                onClick={() => setSegment("todos")}
-              >
-                Todos
-              </button>
-              {RELATIONSHIP_TYPES.map((type) => (
-                <button
-                  key={type.id}
-                  className={`rounded-lg px-3 py-2 text-xs font-black ${segment === type.id ? "bg-orange-500 text-black" : "bg-white/[0.06] text-zinc-400"}`}
-                  type="button"
-                  onClick={() => setSegment(type.id)}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          <div className="mt-6 grid gap-3">
-            {filteredClients.length ? filteredClients.map((client) => {
-              const relation = RELATIONSHIP_TYPES.find((item) => item.id === client.relationshipType);
-
-              return (
-                <article key={client.id} className="rounded-xl border border-white/10 bg-black/20 p-4">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge color={relation?.color}>{relation?.label}</Badge>
-                        <Badge color={client.leadTemp === "quente" ? "var(--green)" : "var(--orange)"}>{client.leadTemp}</Badge>
-                        <Badge color={client.payment === "ok" ? "var(--green)" : "#facc15"}>{statusLabels[client.status]}</Badge>
-                      </div>
-                      <h3 className="mt-3 break-words text-xl font-black">{client.name}</h3>
-                      <p className="mt-1 text-sm text-zinc-500">{client.company || client.service}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Estimativa</p>
-                        <p className="mt-1 max-w-40 truncate text-xl font-black text-emerald-300">
-                          {formatCurrency(client.estimatedBudget ?? client.monthlyValue ?? client.value, state.privacyMode)}
-                        </p>
-                      </div>
+            {filteredClients.length ? (
+              <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(280px,0.82fr)_minmax(0,1.18fr)]">
+                <div className="grid content-start gap-2">
+                  {filteredClients.map((client) => {
+                    const relation = RELATIONSHIP_TYPES.find((item) => item.id === client.relationshipType);
+                    const active = selectedClient?.id === client.id;
+                    return (
                       <button
-                        aria-label={`Excluir ${client.name}`}
-                        className="grid size-10 place-items-center rounded-lg border border-red-400/20 bg-red-400/10 text-red-300 transition hover:bg-red-400/20"
+                        key={client.id}
+                        className={`focus-ring rounded-xl border p-3 text-left transition ${active ? "border-orange-400/45 bg-orange-500/12" : "border-white/10 bg-white/[0.032] hover:bg-white/[0.055]"}`}
                         type="button"
-                        onClick={() => removeClient(client)}
+                        onClick={() => setSelectedClientId(client.id)}
                       >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-black text-white">{client.name}</p>
+                            <p className="mt-1 truncate text-xs font-bold text-zinc-500">{client.company || client.service}</p>
+                          </div>
+                          <span className="shrink-0 rounded-full px-2 py-1 text-[10px] font-black uppercase" style={{ background: `${relation?.color ?? "var(--orange)"}22`, color: relation?.color ?? "var(--orange)" }}>
+                            {client.leadTemp}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-3 text-xs font-bold text-zinc-500">
+                          <span className="truncate">{client.whatsapp || client.email || "Sem contato"}</span>
+                          <span className="text-emerald-300">{formatCurrency(client.estimatedBudget ?? client.monthlyValue ?? client.value, state.privacyMode)}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedClient ? (
+                  <aside className="premium-card min-h-[540px] rounded-2xl p-5">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge color={RELATIONSHIP_TYPES.find((item) => item.id === selectedClient.relationshipType)?.color}>{RELATIONSHIP_TYPES.find((item) => item.id === selectedClient.relationshipType)?.label}</Badge>
+                          <Badge color={selectedClient.leadTemp === "quente" ? "var(--green)" : "var(--orange)"}>{selectedClient.leadTemp}</Badge>
+                          <Badge color={selectedClient.payment === "ok" ? "var(--green)" : "#facc15"}>{statusLabels[selectedClient.status]}</Badge>
+                        </div>
+                        <h3 className="mt-4 text-3xl font-black leading-tight">{selectedClient.name}</h3>
+                        <p className="mt-2 text-sm font-bold text-zinc-500">{selectedClient.company || selectedClient.service}</p>
+                      </div>
+                      <button aria-label={`Excluir ${selectedClient.name}`} className="grid size-10 shrink-0 place-items-center rounded-lg border border-red-400/20 bg-red-400/10 text-red-300 transition hover:bg-red-400/20" type="button" onClick={() => removeClient(selectedClient)}>
                         <Trash2 size={17} />
                       </button>
                     </div>
-                  </div>
 
-                  <div className="mt-5 grid gap-3 md:grid-cols-3">
-                    <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                      <Phone className="text-cyan-300" size={17} />
-                      <p className="mt-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Contato</p>
-                      <p className="mt-1 break-words text-sm font-bold text-zinc-300">{client.whatsapp || client.phone || "Sem telefone"}</p>
+                    <div className="mt-6 grid gap-3 md:grid-cols-3">
+                      {[
+                        { icon: Phone, label: "Contato", value: selectedClient.whatsapp || selectedClient.phone || "Sem telefone", color: "text-cyan-300" },
+                        { icon: Mail, label: "E-mail", value: selectedClient.email || "Não informado", color: "text-violet-300" },
+                        { icon: Target, label: "Origem", value: selectedClient.leadSource, color: "text-orange-300" },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <div key={item.label} className="premium-card rounded-xl p-3">
+                            <Icon className={item.color} size={17} />
+                            <p className="mt-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{item.label}</p>
+                            <p className="mt-1 break-words text-sm font-bold text-zinc-300">{item.value}</p>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                      <Mail className="text-violet-300" size={17} />
-                      <p className="mt-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">E-mail</p>
-                      <p className="mt-1 break-words text-sm font-bold text-zinc-300">{client.email || "Não informado"}</p>
-                    </div>
-                    <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                      <Target className="text-orange-300" size={17} />
-                      <p className="mt-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Origem</p>
-                      <p className="mt-1 break-words text-sm font-bold text-zinc-300">{client.leadSource}</p>
-                    </div>
-                  </div>
 
-                  <details className="mt-3 rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                    <summary className="cursor-pointer text-sm font-black text-zinc-300">Perfil completo</summary>
+                    <div className="mt-4 rounded-xl border border-orange-400/16 bg-orange-500/[0.06] p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">Próxima ação</p>
+                      <p className="mt-2 text-sm leading-6 text-zinc-300">{selectedClient.nextAction}</p>
+                      <Button className="mt-4" disabled={!ready} variant="ghost" onClick={() => createProjectForClient(selectedClient)}>
+                        <BriefcaseBusiness size={17} />
+                        Criar projeto
+                      </Button>
+                    </div>
+
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
                       {[
-                        ["Tipo", client.personType === "empresa" ? "Empresa" : "Pessoa física"],
-                        ["CPF/CNPJ", client.documentNumber || "Não informado"],
-                        ["Responsável", client.primaryContact || client.name],
-                        ["Papel na decisão", client.role || "Não informado"],
-                        ["Instagram", client.instagram || "Não informado"],
-                        ["Site", client.siteUrl || "Não informado"],
-                        ["Endereço", client.address || "Não informado"],
-                        ["Canal", client.acquisitionChannel || "Não informado"],
-                        ["Motivo", client.contactReason || "Não informado"],
-                        ["Serviço desejado", client.desiredService || client.service],
-                        ["Indicação", client.referral || "Não informado"],
-                        ["Atendimento por", client.assignedTo || "Não informado"],
+                        ["Tipo", selectedClient.personType === "empresa" ? "Empresa" : "Pessoa física"],
+                        ["CPF/CNPJ", selectedClient.documentNumber || "Não informado"],
+                        ["Responsável", selectedClient.primaryContact || selectedClient.name],
+                        ["Papel", selectedClient.role || "Não informado"],
+                        ["Canal", selectedClient.acquisitionChannel || "Não informado"],
+                        ["Serviço", selectedClient.desiredService || selectedClient.service],
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-lg border border-white/10 bg-black/20 p-3">
                           <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{label}</p>
@@ -994,60 +999,22 @@ export function ClientsPage() {
                         </div>
                       ))}
                     </div>
-                    {client.tags.length ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {client.tags.map((tag) => (
-                          <span key={tag} className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-black text-cyan-200">
-                            {tag}
-                          </span>
+
+                    {selectedClient.tags.length ? (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {selectedClient.tags.map((tag) => (
+                          <span key={tag} className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-black text-cyan-200">{tag}</span>
                         ))}
                       </div>
                     ) : null}
-                    {client.contactHistory.length ? (
-                      <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
-                        <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Histórico comercial</p>
-                        <p className="mt-1 text-sm font-bold leading-6 text-zinc-300">{client.contactHistory.join(" · ")}</p>
-                      </div>
-                    ) : null}
-                    {client.communicationHistory.length ? (
-                      <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
-                        <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Comunicação</p>
-                        <p className="mt-1 text-sm font-bold leading-6 text-zinc-300">{client.communicationHistory.join(" · ")}</p>
-                      </div>
-                    ) : null}
-                    {client.fileLinks.length ? (
-                      <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
-                        <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Arquivos vinculados</p>
-                        <div className="mt-2 grid gap-2">
-                          {client.fileLinks.map((link) => (
-                            <a key={link} className="break-all text-sm font-bold leading-6 text-cyan-300 hover:text-cyan-100" href={link} rel="noopener noreferrer" target="_blank">
-                              {link}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </details>
-
-                  <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">Próxima ação</p>
-                    <p className="mt-2 text-sm leading-6 text-zinc-300">{client.nextAction}</p>
-                    <Button className="mt-4" disabled={!ready} variant="ghost" onClick={() => createProjectForClient(client)}>
-                      <BriefcaseBusiness size={17} />
-                      Criar projeto
-                    </Button>
-                  </div>
-                </article>
-              );
-            }) : (
-              <EmptyState
-                description="Use o cadastro guiado ou um modelo de nicho. O contato já nasce com serviço, origem, temperatura e próxima ação."
-                icon={UserRoundPlus}
-                label="Carteira"
-                title="Nenhum contato neste filtro"
-              />
+                  </aside>
+                ) : null}
+              </div>
+            ) : (
+              <div className="mt-6">
+                <EmptyState description="Use o cadastro guiado ou um modelo de nicho. O contato já nasce com serviço, origem, temperatura e próxima ação." icon={UserRoundPlus} label="Carteira" title="Nenhum contato neste filtro" />
+              </div>
             )}
-          </div>
           </Surface>
         </div>
       </section>
