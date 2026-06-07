@@ -5,6 +5,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import type { MemberStatus, UserRole } from "@/lib/auth/roles";
 import { studioDocById, type PipelineKey, type RelationshipType, type StudioDocId, presetById } from "@/lib/constants";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { getCanonicalOrigin } from "@/lib/site-url";
 import {
   INITIAL_WORKSPACE_STATE,
   buildClient,
@@ -616,7 +617,7 @@ function useWorkspaceStateModel() {
           return;
         }
 
-        const redirectTo = `${window.location.origin}/auth/callback`;
+        const redirectTo = `${getCanonicalOrigin(window.location.origin)}/auth/callback`;
         setSyncStatus("loading");
         setSyncMessage("Abrindo login com GitHub...");
 
