@@ -356,7 +356,7 @@ export function normalizeClient(client: ClientRecord): ClientRecord {
     assignedTo: client.assignedTo ?? "Eu",
     contactHistory: client.contactHistory ?? [],
     communicationHistory: client.communicationHistory ?? client.contactHistory ?? [],
-    fileLinks: client.fileLinks ?? [],
+    fileLinks: Array.isArray(client.fileLinks) ? client.fileLinks : client.fileLinks ? [String(client.fileLinks)] : [],
     tags: client.tags ?? [],
   };
 }

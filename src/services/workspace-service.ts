@@ -201,7 +201,7 @@ function mapClient(row: ClientRow): ClientRecord {
     assignedTo: row.assigned_to ?? undefined,
     contactHistory: row.contact_history ?? [],
     communicationHistory: row.communication_history ?? row.contact_history ?? [],
-    fileLinks: row.file_links ?? [],
+    fileLinks: Array.isArray(row.file_links) ? row.file_links : row.file_links ? [String(row.file_links)] : [],
     tags: row.tags ?? [],
     relationshipType: row.relationship_type ?? "cliente",
     status: row.status ?? "lead",

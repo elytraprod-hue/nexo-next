@@ -236,6 +236,7 @@ export function ClientsPage() {
     [segment, state.clients],
   );
   const selectedClient = filteredClients.find((client) => client.id === selectedClientId) ?? filteredClients[0] ?? null;
+  const selectedClientFileLinks = Array.isArray(selectedClient?.fileLinks) ? selectedClient.fileLinks : [];
   const selectedPreset = AUDIOVISUAL_PRESETS.find((preset) => preset.id === presetId) ?? AUDIOVISUAL_PRESETS[1];
   const selectedProposalPreset = AUDIOVISUAL_PRESETS.find((preset) => preset.id === proposalPresetId) ?? AUDIOVISUAL_PRESETS[1];
   const completedCore = [draft.name, draft.whatsapp || draft.phone || draft.email, draft.leadSource, quickAction].filter(Boolean).length;
@@ -1132,7 +1133,7 @@ export function ClientsPage() {
                             Links de Drive, entregas, vídeos aprovados, contratos e referências sem pesar o Supabase.
                           </p>
                         </div>
-                        <Badge color="var(--cyan)">{selectedClient.fileLinks.length} links</Badge>
+                        <Badge color="var(--cyan)">{selectedClientFileLinks.length} links</Badge>
                       </div>
 
                       <div className="mt-4 grid gap-3 lg:grid-cols-[0.8fr_1fr_1.2fr_auto]">
@@ -1155,9 +1156,9 @@ export function ClientsPage() {
                         </Button>
                       </div>
 
-                      {selectedClient.fileLinks.length ? (
+                      {selectedClientFileLinks.length ? (
                         <div className="mt-4 grid gap-2">
-                          {selectedClient.fileLinks.map((rawLink, index) => {
+                          {selectedClientFileLinks.map((rawLink, index) => {
                             const fileLink = parseFileLink(rawLink);
                             return (
                               <div key={`${rawLink}-${index}`} className="flex flex-col gap-3 rounded-xl border border-white/10 bg-black/25 p-3 md:flex-row md:items-center md:justify-between">
