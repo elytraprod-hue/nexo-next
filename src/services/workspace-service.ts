@@ -1,7 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { MemberStatus, UserRole } from "@/lib/auth/roles";
 import type { RelationshipType } from "@/lib/constants";
-import type { BusinessProfile, ClientRecord, CommercialProposal, FinanceEntry, ProjectRecord, StudioDocumentRecord, WorkspaceState } from "@/lib/workspace-state";
+import { normalizeWorkspaceState, type BusinessProfile, type ClientRecord, type CommercialProposal, type FinanceEntry, type ProjectRecord, type StudioDocumentRecord, type WorkspaceState } from "@/lib/workspace-state";
 
 type WorkspaceRow = {
   id: string;
@@ -378,7 +378,7 @@ export async function loadWorkspaceState(supabase: SupabaseClient, workspaceId: 
   const error = workspaceRes.error || clientsRes.error || projectsRes.error || proposalsRes.error || documentsRes.error || financeRes.error;
   if (error) throw error;
 
-  return {
+  return normalizeWorkspaceState({
     businessProfile: mapBusinessProfile(workspaceRes.data),
     clients: (clientsRes.data ?? []).map(mapClient),
     projects: (projectsRes.data ?? []).map(mapProject),
@@ -386,7 +386,7 @@ export async function loadWorkspaceState(supabase: SupabaseClient, workspaceId: 
     documents: (documentsRes.data ?? []).map(mapDocument),
     financeEntries: (financeRes.data ?? []).map(mapFinance),
     privacyMode: false,
-  };
+  });
 }
 
 export async function loadCloudWorkspace(supabase: SupabaseClient, user: User): Promise<CloudLoadResult> {
