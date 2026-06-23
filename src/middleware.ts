@@ -18,6 +18,7 @@ function isPublicRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // SE FOR ROTA PÚBLICA: passa direto SEM NENHUMA VERIFICAÇÃO
   if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
@@ -58,6 +59,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  runtime: 'nodejs',
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)).*)",
   ],
