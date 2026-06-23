@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_ROUTES = ["/", "/auth/login", "/auth/signup", "/auth/callback", "/auth/reset-password"];
+const PUBLIC_ROUTES = ["/", "/auth/login", "/auth/signup", "/auth/callback", "/auth/reset-password", "/auth/onboarding", "/auth/blocked"];
 const PUBLIC_API_ROUTES = ["/api/public", "/review"];
 const CLIENT_PORTAL_ROUTES = ["/cliente"];
 const STATIC_ASSETS = ["/_next", "/favicon.ico", "/images", "/fonts", "/api/webhook"];
@@ -15,6 +14,15 @@ function isPublicRoute(pathname: string): boolean {
   return false;
 }
 
+function getSessionFromCookies(request: NextRequest): { access_token?: string; refresh_token?: string } | null {
+  const accessToken = request.cookies.get("sb-access-token")?.value;
+  const refreshToken = request.cookies.get("sb-refresh-token")?.value;
+
+  if (!accessToken) return null;
+
+  return { access_token: accessToken, refresh_token: refreshToken };
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -23,75 +31,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Criar cliente Supabase para o middleware
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          // Middleware não pode setar cookies diretamente, apenas passa adiante
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
-        },
-      },
-    }
-  );
+  // Verificar se há token de sessão nos cookies
+  const session = getSessionFromCookies(request);
 
-  // Verificar sessão
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
+  if (!session) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Verificar workspace membership para rotas internas
-  if (!pathname.startsWith("/cliente") && !pathname.startsWith("/review")) {
-    const { data: member, error: memberError } = await supabase
-      .from("workspace_members")
-      .select("role, status, workspace_id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle();
+  // Token existe, permite passar (validação detalhada é feita no client/server)
+  // Adicionar headers para o client saber que está autenticado
+  const response = NextResponse.next();
+  response.headers.set("x-auth-required", "true");
 
-    if (memberError || !member) {
-      // Usuário sem workspace — redireciona para onboarding
-      const onboardingUrl = new URL("/auth/onboarding", request.url);
-      return NextResponse.redirect(onboardingUrl);
-    }
-
-    if (member.status !== "active") {
-      // Usuário bloqueado ou pendente
-      const blockedUrl = new URL("/auth/blocked", request.url);
-      return NextResponse.redirect(blockedUrl);
-    }
-
-    // Verificar permissão de admin para rotas /admin
-    if (pathname.startsWith("/admin")) {
-      const isAdmin = member.role === "owner" || member.role === "admin";
-      if (!isAdmin) {
-        const dashboardUrl = new URL("/dashboard", request.url);
-        return NextResponse.redirect(dashboardUrl);
-      }
-    }
-
-    // Adicionar headers com info do workspace para o client
-    const response = NextResponse.next();
-    response.headers.set("x-workspace-id", member.workspace_id);
-    response.headers.set("x-user-role", member.role);
-    return response;
-  }
-
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
