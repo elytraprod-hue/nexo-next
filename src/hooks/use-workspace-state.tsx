@@ -10,7 +10,7 @@ interface WorkspaceContextType {
   ready: boolean;
   user: User | null;
   workspaceState: WorkspaceState | null;
-  state: WorkspaceState & { privacyMode?: boolean } | null;
+  state: (WorkspaceState & { privacyMode?: boolean }) | null;
   metrics: {
     totalClients: number;
     activeProjects: number;
@@ -42,7 +42,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const loadWorkspaceState = useCallback(async () => {
     if (!supabase) {
-      setSyncMessage("Supabase não configurado.");
+      setSupabaseConfigured(false);
       setReady(true);
       return;
     }
@@ -68,8 +68,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (memberError) {
-        console.error("[WorkspaceProvider] Erro ao buscar member:", memberError);
-        setSyncMessage("Erro ao carregar workspace.");
+        console.error("[WorkspaceProvider] Erro:", memberError);
         setSyncStatus("error");
         setReady(true);
         return;
@@ -99,14 +98,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setWorkspaceState(state);
       } else {
         setWorkspaceState({
-          businessProfile: {
-            name: "",
-            cnpj: "",
-            email: "",
-            phone: "",
-            siteUrl: "",
-            logoUrl: "",
-          },
+          businessProfile: { name: "", cnpj: "", email: "", phone: "", siteUrl: "", logoUrl: "" },
           clients: [],
           projects: [],
           documents: [],
@@ -119,7 +111,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setReady(true);
     } catch (err) {
       console.error("[WorkspaceProvider] Erro:", err);
-      setSyncMessage("Erro inesperado ao carregar dados.");
       setSyncStatus("error");
       setReady(true);
     }
@@ -148,11 +139,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     window.location.href = "/auth/login";
   };
 
-  const togglePrivacy = () => {
-    setPrivacyMode(prev => !prev);
-  };
+  const togglePrivacy = () => setPrivacyMode(prev => !prev);
 
-  const actions: WorkspaceStateActions & { togglePrivacy?: () => void } = {
+  const actions = {
     signInWithGitHub,
     signOut,
     loadWorkspaceState,
