@@ -4,7 +4,7 @@ import { useWorkspaceState } from "@/hooks/use-workspace-state";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, FolderKanban, FileText, Settings, LogOut, Menu, X, Film } from "lucide-react";
+import { LayoutDashboard, Users, FolderKanban, FileText, Settings, LogOut, Menu, X } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -15,7 +15,7 @@ const NAV = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { ready, user, actions, workspaceRole } = useWorkspaceState();
+  const { ready, user, actions } = useWorkspaceState();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 

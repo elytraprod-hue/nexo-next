@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-interface PaginatedQueryOptions<T> {
+interface PaginatedQueryOptions {
   supabase: SupabaseClient | null;
   table: string;
   workspaceId: string;
@@ -26,7 +26,7 @@ interface PaginatedResult<T> {
 }
 
 export function usePaginatedQuery<T extends Record<string, unknown>>(
-  options: PaginatedQueryOptions<T>
+  options: PaginatedQueryOptions
 ): PaginatedResult<T> {
   const {
     supabase,
@@ -120,7 +120,7 @@ export function usePaginatedQuery<T extends Record<string, unknown>>(
     setPage(0);
     setData([]);
     fetchPage(0, false);
-  }, [workspaceId, table, JSON.stringify(filters)]);
+  }, [workspaceId, table, JSON.stringify(filters), fetchPage]);
 
   const loadMore = useCallback(() => {
     if (loading || !hasMore) return;
