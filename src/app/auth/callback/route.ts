@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+function getSupabaseUrl() {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+}
+
+function getSupabaseAnonKey() {
+  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -11,24 +19,28 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/auth/login?error=missing_code`);
   }
 
+  const url = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
+
+  if (!url || !anonKey) {
+    console.error("[Auth Callback] Supabase não configurado");
+    return NextResponse.redirect(`${origin}/auth/login?error=supabase_not_configured`);
+  }
+
   let response = NextResponse.redirect(`${origin}${next}`);
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return [];
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
+  const supabase = createServerClient(url, anonKey, {
+    cookies: {
+      getAll() {
+        return [];
       },
-    }
-  );
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options);
+        });
+      },
+    },
+  });
 
   try {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -43,7 +55,6 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/auth/login?error=no_session`);
     }
 
-    // Verificar se usuário tem workspace
     const { data: member, error: memberError } = await supabase
       .from("workspace_members")
       .select("workspace_id, role, status")
@@ -55,7 +66,6 @@ export async function GET(request: Request) {
       console.error("[Auth Callback] Erro ao buscar workspace:", memberError.message);
     }
 
-    // Se não tem workspace, cria automaticamente
     if (!member) {
       const userName = data.user.user_metadata?.name ?? data.user.email?.split("@")[0] ?? "Studio";
       const { data: workspace, error: workspaceError } = await supabase
