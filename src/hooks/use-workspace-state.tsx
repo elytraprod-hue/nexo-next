@@ -29,20 +29,19 @@ interface WorkspaceContextType {
 const WorkspaceContext = createContext<WorkspaceContextType | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
-  const [privacyMode, setPrivacyMode] = useState(false);
+  const [privacyMode, setPrivacyMode] = useState<boolean>(false);
   const [workspaceRole, setWorkspaceRole] = useState<string | null>(null);
   const [workspaceMemberStatus, setWorkspaceMemberStatus] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
-  const [supabaseConfigured, setSupabaseConfigured] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const [supabaseConfigured, setSupabaseConfigured] = useState<boolean>(false);
+  const [isClient, setIsClient] = useState<boolean>(false);
 
   const supabase = getSupabaseBrowserClient();
 
-  // Detectar se está no client
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -148,9 +147,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     window.location.href = "/auth/login";
   };
 
-  const togglePrivacy = () => setPrivacyMode(prev => !prev);
+  const togglePrivacy = () => setPrivacyMode((prev) => !prev);
 
-  const actions = {
+  const actions: WorkspaceStateActions & { togglePrivacy?: () => void } = {
     signInWithGitHub,
     signOut,
     loadWorkspaceState,
