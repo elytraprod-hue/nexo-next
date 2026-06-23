@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/auth/login?error=supabase_not_configured`);
   }
 
-  let response = NextResponse.redirect(`${origin}${next}`);
+  const response = NextResponse.redirect(`${origin}${next}`);
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
