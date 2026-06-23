@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
 const PUBLIC_ROUTES = ["/", "/auth/login", "/auth/signup", "/auth/callback", "/auth/reset-password", "/auth/onboarding", "/auth/blocked"];
 const PUBLIC_API_ROUTES = ["/api/public", "/review"];
@@ -14,36 +15,44 @@ function isPublicRoute(pathname: string): boolean {
   return false;
 }
 
-function getSessionFromCookies(request: NextRequest): { access_token?: string; refresh_token?: string } | null {
-  const accessToken = request.cookies.get("sb-access-token")?.value;
-  const refreshToken = request.cookies.get("sb-refresh-token")?.value;
-
-  if (!accessToken) return null;
-
-  return { access_token: accessToken, refresh_token: refreshToken };
-}
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Se for rota pública, permite sem verificar auth
   if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
 
-  // Verificar se há token de sessão nos cookies
-  const session = getSessionFromCookies(request);
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-  if (!session) {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
-
-  // Token existe, permite passar (validação detalhada é feita no client/server)
-  // Adicionar headers para o client saber que está autenticado
-  const response = NextResponse.next();
-  response.headers.set("x-auth-required", "true");
 
   return response;
 }
