@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -11,20 +11,15 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/auth/login?error=missing_code`);
   }
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return [];
-        },
-        setAll() {
-          // Server-side: cookies são gerenciados pela resposta
-        },
-      },
-    }
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    console.error("[Auth Callback] Supabase não configurado");
+    return NextResponse.redirect(`${origin}/auth/login?error=supabase_not_configured`);
+  }
+
+  const supabase = createClient(url, anonKey);
 
   try {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -91,24 +86,21 @@ export async function GET(request: Request) {
     const redirectUrl = new URL(next, origin);
     const response = NextResponse.redirect(redirectUrl);
 
-    // Garantir que os cookies de sessão sejam passados
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      response.cookies.set("sb-access-token", session.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 7 dias
-        path: "/",
-      });
-      response.cookies.set("sb-refresh-token", session.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7,
-        path: "/",
-      });
-    }
+    // Setar cookies de sessão
+    response.cookies.set("sb-access-token", data.session.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+    response.cookies.set("sb-refresh-token", data.session.refresh_token, {
+      httpOnly: true,
+      secure:.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
 
     return response;
   } catch (err) {
