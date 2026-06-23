@@ -1,12 +1,25 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { loadCloudWorkspace } from "@/services/workspace-service";
 import type { User } from "@supabase/supabase-js";
 import type { WorkspaceState, WorkspaceStateActions } from "@/lib/workspace-state";
 
-export function useWorkspaceState() {
+interface WorkspaceContextType {
+  ready: boolean;
+  user: User | null;
+  workspaceState: WorkspaceState | null;
+  workspaceRole: string | null;
+  workspaceMemberStatus: string | null;
+  syncMessage: string | null;
+  supabaseConfigured: boolean;
+  actions: WorkspaceStateActions;
+}
+
+const WorkspaceContext = createContext<WorkspaceContextType | null>(null);
+
+export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
@@ -35,7 +48,6 @@ export function useWorkspaceState() {
         return;
       }
 
-      // Verificar se usuário tem workspace
       const { data: member, error: memberError } = await supabase
         .from("workspace_members")
         .select("workspace_id, role, status")
@@ -44,14 +56,13 @@ export function useWorkspaceState() {
         .maybeSingle();
 
       if (memberError) {
-        console.error("[useWorkspaceState] Erro ao buscar member:", memberError);
+        console.error("[WorkspaceProvider] Erro ao buscar member:", memberError);
         setSyncMessage("Erro ao carregar workspace.");
         setReady(true);
         return;
       }
 
       if (!member) {
-        // Sem workspace — redirecionar para onboarding
         setWorkspaceMemberStatus("local");
         setWorkspaceRole(null);
         setReady(true);
@@ -67,13 +78,11 @@ export function useWorkspaceState() {
         return;
       }
 
-      // Carregar dados do workspace
       const state = await loadCloudWorkspace(supabase, user);
 
       if (state) {
         setWorkspaceState(state);
       } else {
-        // Criar estado vazio se não houver dados
         setWorkspaceState({
           businessProfile: {
             name: "",
@@ -93,7 +102,7 @@ export function useWorkspaceState() {
 
       setReady(true);
     } catch (err) {
-      console.error("[useWorkspaceState] Erro:", err);
+      console.error("[WorkspaceProvider] Erro:", err);
       setSyncMessage("Erro inesperado ao carregar dados.");
       setReady(true);
     }
@@ -128,7 +137,7 @@ export function useWorkspaceState() {
     loadWorkspaceState,
   };
 
-  return {
+  const value: WorkspaceContextType = {
     ready,
     user,
     workspaceState,
@@ -138,4 +147,18 @@ export function useWorkspaceState() {
     supabaseConfigured,
     actions,
   };
+
+  return (
+    <WorkspaceContext.Provider value={value}>
+      {children}
+    </WorkspaceContext.Provider>
+  );
+}
+
+export function useWorkspaceState() {
+  const context = useContext(WorkspaceContext);
+  if (!context) {
+    throw new Error("useWorkspaceState deve ser usado dentro de WorkspaceProvider");
+  }
+  return context;
 }
