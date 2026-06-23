@@ -38,8 +38,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [supabaseConfigured, setSupabaseConfigured] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   const supabase = getSupabaseBrowserClient();
+
+  // Detectar se está no client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const loadWorkspaceState = useCallback(async () => {
     if (!supabase) {
@@ -118,8 +124,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   useEffect(() => {
-    loadWorkspaceState();
-  }, [loadWorkspaceState]);
+    if (isClient) {
+      loadWorkspaceState();
+    }
+  }, [isClient, loadWorkspaceState]);
 
   const signInWithGitHub = async () => {
     if (!supabase) return;
@@ -155,7 +163,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     totalClients: workspaceState?.clients?.length ?? 0,
     activeProjects: workspaceState?.projects?.filter((p: { status?: string }) => p.status === "active" || p.status === "in_progress")?.length ?? 0,
     pendingReceivables,
-    receivable: pendingReceivables, // alias para AppShell
+    receivable: pendingReceivables,
     monthlyRevenue: workspaceState?.finance?.filter((f: { status?: string; type?: string }) => f.status === "paid" && f.type === "receivable")?.reduce((sum: number, f: { amount?: number }) => sum + (f.amount ?? 0), 0) ?? 0,
   };
 
