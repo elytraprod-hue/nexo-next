@@ -15,6 +15,7 @@ interface WorkspaceContextType {
     totalClients: number;
     activeProjects: number;
     pendingReceivables: number;
+    receivable: number;
     monthlyRevenue: number;
   };
   workspaceRole: string | null;
@@ -148,10 +149,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     togglePrivacy,
   };
 
+  const pendingReceivables = workspaceState?.finance?.filter((f: { status?: string; type?: string }) => f.status === "pending" && f.type === "receivable")?.reduce((sum: number, f: { amount?: number }) => sum + (f.amount ?? 0), 0) ?? 0;
+
   const metrics = {
     totalClients: workspaceState?.clients?.length ?? 0,
     activeProjects: workspaceState?.projects?.filter((p: { status?: string }) => p.status === "active" || p.status === "in_progress")?.length ?? 0,
-    pendingReceivables: workspaceState?.finance?.filter((f: { status?: string; type?: string }) => f.status === "pending" && f.type === "receivable")?.reduce((sum: number, f: { amount?: number }) => sum + (f.amount ?? 0), 0) ?? 0,
+    pendingReceivables,
+    receivable: pendingReceivables, // alias para AppShell
     monthlyRevenue: workspaceState?.finance?.filter((f: { status?: string; type?: string }) => f.status === "paid" && f.type === "receivable")?.reduce((sum: number, f: { amount?: number }) => sum + (f.amount ?? 0), 0) ?? 0,
   };
 
