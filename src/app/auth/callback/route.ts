@@ -96,7 +96,7 @@ export async function GET(request: Request) {
     });
     response.cookies.set("sb-refresh-token", data.session.refresh_token, {
       httpOnly: true,
-      secure:.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7,
       path: "/",
