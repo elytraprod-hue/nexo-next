@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { LogIn, AlertTriangle, Github, Mail } from "lucide-react";
+import { LogIn, AlertTriangle, GitHub, Mail } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -152,7 +152,7 @@ export default function LoginPage() {
               mode === "github" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            <Github size={14} className="inline mr-1" /> GitHub
+            <GitHub size={14} className="inline mr-1" /> GitHub
           </button>
           <button
             onClick={() => setMode("email")}
