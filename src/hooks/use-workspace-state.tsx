@@ -10,11 +10,19 @@ interface WorkspaceContextType {
   ready: boolean;
   user: User | null;
   workspaceState: WorkspaceState | null;
+  state: WorkspaceState & { privacyMode?: boolean } | null;
+  metrics: {
+    totalClients: number;
+    activeProjects: number;
+    pendingReceivables: number;
+    monthlyRevenue: number;
+  };
   workspaceRole: string | null;
   workspaceMemberStatus: string | null;
   syncMessage: string | null;
+  syncStatus: string | null;
   supabaseConfigured: boolean;
-  actions: WorkspaceStateActions;
+  actions: WorkspaceStateActions & { togglePrivacy?: () => void };
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | null>(null);
@@ -23,9 +31,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
+  const [privacyMode, setPrivacyMode] = useState(false);
   const [workspaceRole, setWorkspaceRole] = useState<string | null>(null);
   const [workspaceMemberStatus, setWorkspaceMemberStatus] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [supabaseConfigured, setSupabaseConfigured] = useState(false);
 
   const supabase = getSupabaseBrowserClient();
@@ -38,6 +48,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
 
     setSupabaseConfigured(true);
+    setSyncStatus("loading");
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -45,6 +56,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (!user) {
         setReady(true);
+        setSyncStatus("idle");
         return;
       }
 
@@ -58,6 +70,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (memberError) {
         console.error("[WorkspaceProvider] Erro ao buscar member:", memberError);
         setSyncMessage("Erro ao carregar workspace.");
+        setSyncStatus("error");
         setReady(true);
         return;
       }
@@ -65,6 +78,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (!member) {
         setWorkspaceMemberStatus("local");
         setWorkspaceRole(null);
+        setSyncStatus("idle");
         setReady(true);
         return;
       }
@@ -74,6 +88,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (member.status !== "active") {
         setSyncMessage("Sua conta está pendente de aprovação.");
+        setSyncStatus("idle");
         setReady(true);
         return;
       }
@@ -100,10 +115,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         });
       }
 
+      setSyncStatus("synced");
       setReady(true);
     } catch (err) {
       console.error("[WorkspaceProvider] Erro:", err);
       setSyncMessage("Erro inesperado ao carregar dados.");
+      setSyncStatus("error");
       setReady(true);
     }
   }, [supabase]);
@@ -131,19 +148,36 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     window.location.href = "/auth/login";
   };
 
-  const actions: WorkspaceStateActions = {
+  const togglePrivacy = () => {
+    setPrivacyMode(prev => !prev);
+  };
+
+  const actions: WorkspaceStateActions & { togglePrivacy?: () => void } = {
     signInWithGitHub,
     signOut,
     loadWorkspaceState,
+    togglePrivacy,
   };
+
+  const metrics = {
+    totalClients: workspaceState?.clients?.length ?? 0,
+    activeProjects: workspaceState?.projects?.filter((p: { status?: string }) => p.status === "active" || p.status === "in_progress")?.length ?? 0,
+    pendingReceivables: workspaceState?.finance?.filter((f: { status?: string; type?: string }) => f.status === "pending" && f.type === "receivable")?.reduce((sum: number, f: { amount?: number }) => sum + (f.amount ?? 0), 0) ?? 0,
+    monthlyRevenue: workspaceState?.finance?.filter((f: { status?: string; type?: string }) => f.status === "paid" && f.type === "receivable")?.reduce((sum: number, f: { amount?: number }) => sum + (f.amount ?? 0), 0) ?? 0,
+  };
+
+  const state = workspaceState ? { ...workspaceState, privacyMode } : null;
 
   const value: WorkspaceContextType = {
     ready,
     user,
     workspaceState,
+    state,
+    metrics,
     workspaceRole,
     workspaceMemberStatus,
     syncMessage,
+    syncStatus,
     supabaseConfigured,
     actions,
   };
